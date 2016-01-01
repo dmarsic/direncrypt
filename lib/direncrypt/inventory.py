@@ -81,5 +81,5 @@ class Inventory:
 
     def update_last_timestamp(self):
         """Update last timestamp in the database."""
-        inventory.execute('''UPDATE state SET value = strftime('%s', 'now')
+        self.cursor.execute('''UPDATE state SET value = strftime('%s', 'now')
             WHERE key = 'last_timestamp' ''')
