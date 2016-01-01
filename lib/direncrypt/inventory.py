@@ -25,8 +25,10 @@ import sqlite3
 class Inventory:
     """Inventory is a file/location register for encrypted files.
 
-    This class, used with 'with' statement, only defines the connection
-    and returns cursor.
+    This class, used with 'with' statement, defines the connection.
+    Provided methods use cursor to execute queries against the
+    database. Calling functions and classes should not directly use
+    cursor to execute arbitrary queries.
     """
 
     def __init__(self, filename):
@@ -36,8 +38,48 @@ class Inventory:
     def __enter__(self):
         self.conn = sqlite3.connect(self.database)
         self.conn.row_factory = sqlite3.Row
-        return self.conn.cursor()
+        self.cursor = self.conn.cursor()
+        return self
 
     def __exit__(self, type, value, traceback):
         self.conn.commit()
         self.conn.close()
+
+    def read_parameters(self):
+        """Fetch program parameters and state from the database."""
+        params = {}
+        for row in self.cursor.execute('SELECT key, value FROM parameters'):
+            params[row[0]] = row[1]
+        for row in self.cursor.execute('SELECT key, value FROM state'):
+            params[row[0]] = row[1]
+        return params
+
+    def read_register(self):
+        """Get information on all registered encrypted files.
+
+        Returns a dict with unencrypted filename for keys, having
+        a dict of unencrypted file, encrypted file and public id
+        as value.
+        """
+        rows = {}
+        for row in self.cursor.execute('''
+                SELECT unencrypted_file, encrypted_file, public_id
+                FROM register'''):
+            rows[row[0]] = {
+                'unencrypted_file': row[0],
+                'encrypted_file':   row[1],
+                'public_id':        row[2]
+            }
+        return rows
+
+    def register(self, plain_path, enc_path, public_id):
+        """Register input and output filenames into a database."""
+        self.cursor.execute('''INSERT OR REPLACE INTO register
+            (unencrypted_file, encrypted_file, public_id)
+            VALUES (?,?,?)''',
+            (plain_path, enc_path, public_id))
+
+    def update_last_timestamp(self):
+        """Update last timestamp in the database."""
+        self.cursor.execute('''UPDATE state SET value = strftime('%s', 'now')
+            WHERE key = 'last_timestamp' ''')

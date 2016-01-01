@@ -31,10 +31,57 @@ from mock import MagicMock, patch
 from direncrypt.inventory import Inventory
 
 @patch('direncrypt.inventory.sqlite3')
-def test_inventory(sqlite3):
-    sqlite3.connect.return_value.cursor.return_value.execute.return_value = [1]
-
+def test_inventory_enter(sqlite3):
     with Inventory('test_database') as i:
-        print i
-        for row in i.execute('SELECT 1'):
-            eq_(row, 1)
+        ok_(i.cursor)
+
+@patch('direncrypt.inventory.sqlite3.connect')
+def test_read_parameters(connect):
+
+    connect().cursor().execute.side_effect = [
+        [
+            ('param-key-1', 'param-value-1'),
+            ('param-key-2', 'param-value-2')
+        ],
+        [
+            ('state-key-1', 'state-value-1')
+        ]
+    ]
+
+    with Inventory('test_database') as inv:
+        params = inv.read_parameters()
+
+    eq_(len(params), 3)
+    for k in ['param-key-1', 'param-key-2', 'state-key-1']:
+        ok_(k in params.keys())
+    eq_(params['state-key-1'], 'state-value-1')
+
+@patch('direncrypt.inventory.sqlite3.connect')
+def test_read_register(connect):
+
+    connect().cursor().execute.return_value = [
+        ('unenc_1', 'uuid-1', 'public_id_1'),
+        ('unenc_2', 'uuid-2', 'public_id_2'),
+        ('unenc_3', 'uuid-3', 'public_id_3')
+    ]
+
+    with Inventory('test_database') as inv:
+        rows = inv.read_register()
+
+    eq_(len(rows), 3)
+    for f in ['unenc_1', 'unenc_2', 'unenc_3']:
+        ok_(f in rows.keys())
+    eq_(rows['unenc_2']['unencrypted_file'], 'unenc_2')
+    eq_(rows['unenc_2']['encrypted_file'], 'uuid-2')
+    eq_(rows['unenc_2']['public_id'], 'public_id_2')
+
+
+@patch('direncrypt.inventory.sqlite3.connect')
+def test_register(connect):
+
+    with Inventory('test_database') as inv:
+        inv.register('plain', 'encrypted', 'public_id')
+
+        eq_(inv.cursor.execute.call_count, 1)
+        eq_(inv.cursor.execute.call_args[0][1],
+            ('plain', 'encrypted', 'public_id'))
