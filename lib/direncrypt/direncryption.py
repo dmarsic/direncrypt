@@ -101,7 +101,7 @@ class DirEncryption:
                 encryptedfile = self.generate_name()
                 self.encrypt(plainfile, encryptedfile)
                 self._print('Encrypted: %s ---> %s', plainfile, encryptedfile)
-            self.update_last_timestamp(i)
+            i.update_last_timestamp()
 
     def encrypt(self, plainfile, encfile):
         """Encrypt the file and register input and output filenames."""
@@ -173,11 +173,6 @@ class DirEncryption:
     def generate_name(self):
         """Return a unique file name for encrypted file."""
         return str(uuid.uuid4())
-
-    def update_last_timestamp(self, inventory):
-        """Update last timestamp in the database."""
-        inventory.execute('''UPDATE state SET value = strftime('%s', 'now')
-            WHERE key = 'last_timestamp' ''')
 
     def _print(self, message, *args):
         """Internal method to print messages to STDOUT."""

@@ -78,3 +78,8 @@ class Inventory:
             (unencrypted_file, encrypted_file, public_id)
             VALUES (?,?,?)''',
             (plain_path, enc_path, public_id))
+
+    def update_last_timestamp(self):
+        """Update last timestamp in the database."""
+        inventory.execute('''UPDATE state SET value = strftime('%s', 'now')
+            WHERE key = 'last_timestamp' ''')

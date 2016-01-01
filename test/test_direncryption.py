@@ -143,9 +143,7 @@ def test_encrypt(expanduser, Inventory, GPGOps):
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.DirEncryption.find_unencrypted_files')
 @patch('direncrypt.direncryption.DirEncryption.encrypt')
-@patch('direncrypt.direncryption.DirEncryption.update_last_timestamp')
-def test_encrypt_all__no_files(update_ts, encrypt, find,
-                               expanduser, Inventory, GPGOps):
+def test_encrypt_all__no_files(encrypt, find, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
@@ -162,7 +160,7 @@ def test_encrypt_all__no_files(update_ts, encrypt, find,
     de.encrypt_all()
 
     eq_(encrypt.call_count, 0)
-    eq_(update_ts.call_count, 1)
+    eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
 
 
 @patch('direncrypt.direncryption.GPGOps')
@@ -170,9 +168,7 @@ def test_encrypt_all__no_files(update_ts, encrypt, find,
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.DirEncryption.find_unencrypted_files')
 @patch('direncrypt.direncryption.DirEncryption.encrypt')
-@patch('direncrypt.direncryption.DirEncryption.update_last_timestamp')
-def test_encrypt_all(update_ts, encrypt, find,
-                     expanduser, Inventory, GPGOps):
+def test_encrypt_all(encrypt, find, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
@@ -196,7 +192,7 @@ def test_encrypt_all(update_ts, encrypt, find,
     eq_(encrypt.call_args_list[0][0][0], 'test_path_1')
     eq_(encrypt.call_args_list[1][0][0], 'test_path_2')
     eq_(encrypt.call_args_list[2][0][0], 'test_path_3')
-    eq_(update_ts.call_count, 1)
+    eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
 
 
 @patch('direncrypt.direncryption.GPGOps')
