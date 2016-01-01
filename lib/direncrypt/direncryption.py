@@ -44,7 +44,7 @@ class DirEncryption:
             self.database = 'inventory.sqlite'
         else:
             self.database = database
-        
+
         self.set_parameters(args)
         self.gpg = GPGOps(gpg_binary=self.gpg_binary,
                           gpg_recipient=self.public_id,
@@ -57,7 +57,10 @@ class DirEncryption:
             self.verbose = True
 
         with Inventory(self.database) as i:
-            parameters = self.read_parameters(i)
+            parameters = i.read_parameters()
+        for parameter, value in parameters.iteritems():
+            self._print('Parameters: %-15s : %s', parameter, value)
+
 
         self.last_timestamp = parameters['last_timestamp']
 
@@ -81,19 +84,6 @@ class DirEncryption:
         if args.gpg_binary:
             self.gpg_binary  = os.path.expanduser(args.gpg_binary)
 
-    def read_parameters(self, inventory):
-        """Fetch program parameters and state from the database."""
-        params = {}
-        for row in inventory.execute('SELECT key, value FROM parameters'):
-            params[row[0]] = row[1]
-        for row in inventory.execute('SELECT key, value FROM state'):
-            params[row[0]] = row[1]
-
-        for parameter, value in params.iteritems():
-            self._print('Parameters: %-15s : %s', parameter, value)
-
-        return params
-
     def encrypt_all(self):
         """Encrypt all new files from unencrypted directory.
 
@@ -105,7 +95,7 @@ class DirEncryption:
         """
         register = {}
         with Inventory(self.database) as i:
-            register = self.read_register(i)
+            register = i.read_register()
             files = self.find_unencrypted_files(register)
             for plainfile in files.keys():
                 encryptedfile = self.generate_name()
@@ -119,7 +109,7 @@ class DirEncryption:
         encrypted_path = os.path.join(self.securedir, encfile)
 
         with Inventory(self.database) as i:
-            self.register(i, plainfile, encfile)
+            i.register(plainfile, encfile, self.public_id)
         self.gpg.encrypt(plain_path, encrypted_path)
 
     def decrypt_all(self, passphrase):
@@ -131,7 +121,7 @@ class DirEncryption:
         """
         register = {}
         with Inventory(self.database) as i:
-            register = self.read_register(i)
+            register = i.read_register()
             for filename, record in register.iteritems():
                 if record['public_id'] != self.public_id:
                     continue
@@ -146,24 +136,6 @@ class DirEncryption:
         self.gpg.decrypt(encrypted_path, plain_path, phrase)
         self._print('Decrypt: %s ---> %s (%s)',
                 encrypted_path, plain_path, phrase)
-
-    def read_register(self, inventory):
-        """Get information on all registered encrypted files.
-
-        Returns a dict with unencrypted filename for keys, having
-        a dict of unencrypted file, encrypted file and public id
-        as value.
-        """
-        rows = {}
-        for row in inventory.execute('''
-                SELECT unencrypted_file, encrypted_file, public_id
-                FROM register'''):
-            rows[row[0]] = {
-                'unencrypted_file': row[0],
-                'encrypted_file':   row[1],
-                'public_id':        row[2]
-            }
-        return rows
 
     def find_unencrypted_files(self, register):
         """List all files that need to be encrypted.
@@ -197,13 +169,6 @@ class DirEncryption:
                 self._print('List files: %1s %.0d (%s): %s',
                         enc_flag, mtime, self.last_timestamp, relative_path)
         return files
-
-    def register(self, inventory, plain_path, enc_path):
-        """Register input and output filenames into a database."""
-        inventory.execute('''INSERT OR REPLACE INTO register
-            (unencrypted_file, encrypted_file, public_id)
-            VALUES (?,?,?)''',
-            (plain_path, enc_path, self.public_id))
 
     def generate_name(self):
         """Return a unique file name for encrypted file."""
