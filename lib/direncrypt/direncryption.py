@@ -134,8 +134,8 @@ class DirEncryption:
         encrypted_path = os.path.join(self.securedir, encfile)
         plain_path = os.path.join(self.plaindir, plainfile)
         self.gpg.decrypt(encrypted_path, plain_path, phrase)
-        self._print('Decrypt: %s ---> %s (%s)',
-                encrypted_path, plain_path, phrase)
+        self._print('Decrypt: %s ---> %s',
+                encrypted_path, plain_path)
 
     def find_unencrypted_files(self, register):
         """List all files that need to be encrypted.

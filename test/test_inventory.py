@@ -85,3 +85,12 @@ def test_register(connect):
         eq_(inv.cursor.execute.call_count, 1)
         eq_(inv.cursor.execute.call_args[0][1],
             ('plain', 'encrypted', 'public_id'))
+
+@patch('direncrypt.inventory.sqlite3.connect')
+def test_update_parameters(connect):
+
+    with Inventory('test_database') as inv:
+        inv.update_parameters('key_1', 'value_1')
+
+        eq_(inv.cursor.execute.call_count, 1)
+        eq_(inv.cursor.execute.call_args[0][1], ('value_1', 'key_1'))
