@@ -86,6 +86,26 @@ PARAMETERS
     -k|--gpg-keyring
     -b|--gpg-binary
 ```
+## Check Consistency
+
+`list.py` provides a listing of files based on the register, and also checks the existence of files on the filesystem. The listing is provided in the format similar to this:
+
+```
+Plaindir: ~/DropboxLocal
+Securedir: ~/Dropbox/Enc
+
+STATUS PLAINFILE                           ENCFILE
+ok  ue subdir/newfile.txt                  398a8fc1-1c33-4e2b-80a2-ae8645007cba
+ok  ue test1.txt                           97f204c5-bdcb-4e61-9f7b-ec4bc9fd6824
+NOK u  test2.txt                           75d49d5c-bc4c-46ad-b286-c336cc170aff
+ok  ue subdir/another.txt                  6471eef4-8a8a-4fb5-858b-200cdcd7b231
+NOK  e test3.txt                           cc1f2d27-c006-4d01-8c5d-b356ce482a30
+
+Total files in the register: 5
+Check: 3 ok, 2 not ok
+```
+
+State can be inconsistent if the files have been deleted but the register has not been updated. This needs to be done manually at the moment.
 
 ## direncryption Library
 
