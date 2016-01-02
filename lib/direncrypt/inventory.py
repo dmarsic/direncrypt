@@ -45,13 +45,14 @@ class Inventory:
         self.conn.commit()
         self.conn.close()
 
-    def read_parameters(self):
+    def read_parameters(self, params_only=False):
         """Fetch program parameters and state from the database."""
         params = {}
         for row in self.cursor.execute('SELECT key, value FROM parameters'):
             params[row[0]] = row[1]
-        for row in self.cursor.execute('SELECT key, value FROM state'):
-            params[row[0]] = row[1]
+        if not params_only:
+            for row in self.cursor.execute('SELECT key, value FROM state'):
+                params[row[0]] = row[1]
         return params
 
     def read_register(self):
@@ -83,3 +84,8 @@ class Inventory:
         """Update last timestamp in the database."""
         self.cursor.execute('''UPDATE state SET value = strftime('%s', 'now')
             WHERE key = 'last_timestamp' ''')
+
+    def update_parameters(self, key, value):
+        """Update program parameters."""
+        self.cursor.execute('''UPDATE parameters
+            SET value = ? WHERE key = ? ''', (value, key))

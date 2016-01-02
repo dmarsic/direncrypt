@@ -33,14 +33,15 @@ from direncrypt.configuration import CmdConfig, RunConfig
 @patch('direncrypt.configuration.Inventory')
 def test_update(Inventory):
     cmdconfig = CmdConfig()
+    cmdconfig.do_set_database('test_database')
     cmdconfig.update('key_1', 'value_1')
 
-    eq_(Inventory().__enter__().execute.call_count, 1)
+    eq_(Inventory().__enter__().update_parameters.call_count, 1)
 
-    args = Inventory().__enter__().execute.call_args
-    parameters = args[0][1]
-    eq_(parameters[0], 'value_1')
-    eq_(parameters[1], 'key_1')
+    args = Inventory().__enter__().update_parameters.call_args
+    parameters = args[0]
+    eq_(parameters[0], 'key_1')
+    eq_(parameters[1], 'value_1')
 
 @patch('direncrypt.configuration.CmdConfig')
 def test_RunConfig(CmdConfig):

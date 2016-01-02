@@ -112,7 +112,10 @@ if __name__ == '__main__':
         e = DirEncryption(args, database=database)
         e.encrypt_all()
     elif args.decrypt:
-        passphrase = getpass.getpass('Passphrase: ')
+        if args.passphrase:
+            passphrase = args.passphrase
+        else:
+            passphrase = getpass.getpass('Passphrase: ')
         e = DirEncryption(args, database=database)
         e.decrypt_all(passphrase)
     else:

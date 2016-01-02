@@ -32,10 +32,9 @@ class CmdConfig(cmd.Cmd):
     """
 
     prompt = 'parameters> '
-    database = None
 
-    def do_set_database(self, database):
-        database = database
+    def do_set_database(self, path):
+        self.database = path
 
     def do_list(self, arg):
         """list
@@ -43,9 +42,10 @@ class CmdConfig(cmd.Cmd):
         Prints all stored settings."""
         print '%-15s %s' % ('PARAMETER', 'VALUE')
         print '-' * 40
-        with Inventory(database) as i:
-            for row in i.execute('SELECT key, value FROM parameters'):
-                print '%-15s %s' % (row[0], row[1])
+        with Inventory(self.database) as i:
+            params = i.read_parameters(params_only=True)
+            for key, value in i.read_parameters(params_only=True).iteritems():
+                print '%-15s %s' % (key, value)
         print
 
     def do_plaindir(self, directory):
@@ -94,9 +94,7 @@ class CmdConfig(cmd.Cmd):
         """Generic function to update a single parameter."""
         print 'Setting %s to: %s' % (key, value)
         with Inventory(self.database) as i:
-            i.execute('''UPDATE parameters
-                SET value = ? WHERE key = ? ''',
-                (value, key))
+            i.update_parameters(key, value)
 
     def do_done(self, line):
         """Finish setting up configuration."""
@@ -125,6 +123,7 @@ class RunConfig:
         if database is None:
             database = 'inventory.sqlite'
 
-        CmdConfig().do_set_database(database)
-        CmdConfig().do_list(None)
-        CmdConfig().cmdloop()
+        cc = CmdConfig()
+        cc.do_set_database(database)
+        cc.do_list(None)
+        cc.cmdloop()
