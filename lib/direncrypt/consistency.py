@@ -32,13 +32,24 @@ class ConsistencyCheck:
     """
 
     def __init__(self, database):
+        """Load registered file list and program parameters.
 
+        Program parameters are needed for file locations.
+        """
         with Inventory(database) as inventory:
             self.parameters = inventory.read_parameters()
             self.fileset = inventory.read_register()
 
     def check(self):
+        """Check file existence based on the register file set.
 
+        Both unencrypted and encrypted files are checked in their
+        respective plain and encrypted directories. A flag is set
+        based on the check and fileset dict is updated.
+
+        This method does not report or do anything else, so another
+        method may be required to show the result of the check.
+        """
         for filename in self.fileset:
 
             unenc_full_path = os.path.expanduser(os.path.join(
@@ -54,7 +65,12 @@ class ConsistencyCheck:
                     os.path.exists(enc_full_path)
 
     def print_formatted(self):
+        """Output to STDOUT based on the check() method.
 
+        This method can be called after check() has been executed,
+        otherwise it cannot properly report on the existence of
+        files.
+        """
         count_nok = 0
         total_files = len(self.fileset)
 
