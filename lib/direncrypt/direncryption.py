@@ -22,9 +22,9 @@
 
 import os
 import uuid
+import logging
 from gpgops import GPGOps
 from inventory import Inventory
-
 
 class DirEncryption:
     """DirEncryption encrypts and decrypts files between two directories.
@@ -125,9 +125,12 @@ class DirEncryption:
             for filename, record in register.iteritems():
                 if record['public_id'] != self.public_id:
                     continue
-                self.decrypt(record['encrypted_file'],
+                try:
+                    self.decrypt(record['encrypted_file'],
                              record['unencrypted_file'],
                              passphrase)
+                except IOError as e:
+                    logging.warning('decrypt_all: {}'.format(e))
 
     def decrypt(self, encfile, plainfile, phrase):
         """Decrypt the file using a supplied passphrase."""
