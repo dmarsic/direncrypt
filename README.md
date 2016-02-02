@@ -18,6 +18,12 @@ sqlite3 inventory.sqlite < schema.sql
 
 It is assumed that GPG has been configured on the host. If not, this is the place to start: https://gnupg.org/
 
+Additionally, GPG 2.1 requires an additional parameter in `gpg-agent.conf`. If the file does not exist, create it.
+
+```
+allow-loopback-pinentry
+```
+
 A recommended next step is to set GPG parameters by running:
 
 ```
@@ -64,6 +70,12 @@ encrypt.py --encrypt \
            --gpg-homedir ~/.gnupg \
            --gpg-keyring pubring.kbx \
            --gpg-binary gpg2
+```
+
+4) Decrypt all files to another location:
+
+```
+encrypt.py -d --plaindir ~/NewLocation
 ```
 
 ### Command-line options
@@ -122,9 +134,9 @@ This database contains mapping between unencrypted filenames and encrypted filen
 ## Dependencies
 
 * GnuPG: https://gnupg.org/
-* Python modules: `python-gnupg` (https://github.com/isislovecruft/python-gnupg), `sqlite3`
+* Python modules: `python-gnupg` (https://github.com/vsajip/python-gnupg), `sqlite3`
 
-Note: I had problems with decryption using python-gnupg (gpg 2.1.9, python-gnupg 2.0.2). The workaround involves minor modifications to the library and gpg-agent.conf. Please see: https://github.com/isislovecruft/python-gnupg/issues/137
+`lib/direncrypt/gpgops.py` imports `gnupg`. Ensure that `gnupg.py` is found. Some options include adding path to it to `PYTHONPATH` or linking to `gnupg.py` from `lib/direncrypt` directory (I would not recommend the latter).
 
 ## License
 
@@ -134,4 +146,4 @@ See `LICENSE` file.
 
 Domagoj Marsic
 
-<dmars@protonmail.com> or <domagoj.marsic@gmail.com>
+<dmars@protonmail.com>
