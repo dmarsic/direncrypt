@@ -36,18 +36,18 @@ class GPGOps:
                  gpg_recipient=None,
                  gpg_homedir='~/.gnupg',
                  gpg_keyring='pubring.kbx',
-                 verbose=2):
+                 verbose=False):
         """Set GPG parameters for encrypt/decrypt operations."""
         self.recipient = gpg_recipient
-        self.gpg = gnupg.GPG(binary=gpg_binary,
-                             homedir=gpg_homedir,
+        self.gpg = gnupg.GPG(gpgbinary=gpg_binary,
+                             gnupghome=gpg_homedir,
                              keyring=gpg_keyring,
                              verbose=verbose)
 
     def encrypt(self, plainfile, encfile):
         """Encrypt content from plainfile into encfile."""
         with open(plainfile, mode = 'rb') as f:
-            self.gpg.encrypt(f,
+            self.gpg.encrypt(f.read(),
                              self.recipient,
                              armor=False,
                              output=encfile)
