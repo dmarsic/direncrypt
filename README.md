@@ -100,7 +100,7 @@ PARAMETERS
 ```
 ## Check Consistency
 
-`list.py` provides a listing of files based on the register, and also checks the existence of files on the filesystem. The listing is provided in the format similar to this:
+`check.py` provides a listing of files based on the register, and also checks the existence of files on the filesystem. The listing is provided in the format similar to this:
 
 ```
 Plaindir: ~/DropboxLocal
@@ -117,7 +117,12 @@ Total files in the register: 5
 Check: 3 ok, 2 not ok
 ```
 
-State can be inconsistent if the files have been deleted but the register has not been updated. This needs to be done manually at the moment.
+State can be inconsistent if the files have been deleted but the register has not been updated. This utility provides two ways to deal with inconsistencies:
+
+* `check.py --clean|-c`: If unencrypted or encrypted file is missing (or both), the remaining existing file (if any) will be deleted from filesystem, and the entry in the register will be deleted.
+* `check.py --resync|-r`: If unencrypted file is missing, it will be decrypted to the original location, based on the register entry.
+
+Please note that if encrypted file is missing and unencrypted does not, this is a regular situation that `encrypt.py` deals with. It should be encrypted on the next call (possibly initiated via cron).
 
 ## direncryption Library
 
