@@ -31,6 +31,13 @@ from mock import MagicMock, patch
 from direncrypt.consistency import ConsistencyCheck
 
 @patch('direncrypt.consistency.Inventory')
+def test_set_passphrase(Inventory):
+    """Test if passphrase is set correctly."""
+    c = ConsistencyCheck('test_database')
+    c.set_passphrase('passphr4s3')
+    eq_(c.passphrase, 'passphr4s3')
+
+@patch('direncrypt.consistency.Inventory')
 @patch('direncrypt.consistency.os.path.expanduser')
 @patch('direncrypt.consistency.os.path.exists')
 def test_check(exists, expanduser, Inventory):
@@ -71,3 +78,71 @@ def test_check(exists, expanduser, Inventory):
     ok_(c.fileset['unenc_1']['encrypted_file_check'])
     ok_(not c.fileset['unenc_2']['unencrypted_file_check'])
     ok_(c.fileset['unenc_2']['encrypted_file_check'])
+
+@patch('direncrypt.consistency.Inventory')
+@patch('direncrypt.consistency.os.unlink')
+def test_delete_file(unlink, Inventory):
+    """Test that file is deleted successfully."""
+    unlink.return_value = True
+
+    c = ConsistencyCheck('test_database')
+    r = c.delete_file('test_dir', 'test_file')
+    ok_(r)
+
+@patch('direncrypt.consistency.Inventory')
+@patch('direncrypt.consistency.os.unlink')
+def test_delete_file__delete_failed(unlink, Inventory):
+    """Test that unsuccessful delete returns False."""
+    unlink.side_effect = OSError('Boom!')
+
+    c = ConsistencyCheck('test_database')
+    r = c.delete_file('test_dir', 'test_file')
+    ok_(not r)
+
+@patch('direncrypt.consistency.Inventory')
+def test_clean_registry(Inventory):
+    """Test that clean_record is called with filename."""
+    c = ConsistencyCheck('test_database')
+    c.clean_registry('test_file')
+
+    eq_(Inventory().__enter__().clean_record.call_args[0][0], 'test_file')
+
+@patch('direncrypt.consistency.Inventory')
+@patch('direncrypt.consistency.DirEncryption')
+def test_loop_through(DirEncryption, Inventory):
+    """Check number of function executions in the workflow.
+
+    Test clean function and resync function. Mock calls are reset
+    between tests."""
+    c = ConsistencyCheck('test_database')
+    c.delete_file = MagicMock()
+    c.clean_registry = MagicMock()
+    c.fileset = {
+        'unenc_1': {
+            'unencrypted_file'       : 'unenc_1',
+            'encrypted_file'         : 'enc_1',
+            'unencrypted_file_check' : False,
+            'encrypted_file_check'   : True
+        },
+        'unenc_2': {
+            'unencrypted_file'       : 'unenc_2',
+            'encrypted_file'         : 'enc_2',
+            'unencrypted_file_check' : True,
+            'encrypted_file_check'   : False
+        }
+    }
+
+    c.loop_through(clean=True)
+    eq_(c.delete_file.call_count, 2)
+    eq_(c.clean_registry.call_count, 2)
+    eq_(DirEncryption.call_count, 0)
+
+    c.delete_file.reset_mock()
+    c.clean_registry.reset_mock()
+    DirEncryption.reset_mock()
+
+    c.set_passphrase('test_pass')
+    c.loop_through(resync=True)
+    eq_(c.delete_file.call_count, 0)
+    eq_(c.clean_registry.call_count, 0)
+    eq_(DirEncryption.call_count, 1)

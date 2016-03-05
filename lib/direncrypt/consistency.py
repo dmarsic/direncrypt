@@ -36,9 +36,14 @@ class ConsistencyCheck:
 
         Program parameters are needed for file locations.
         """
-        with Inventory(database) as inventory:
+        self.database = database
+        with Inventory(self.database) as inventory:
             self.parameters = inventory.read_parameters()
             self.fileset = inventory.read_register()
+
+    def set_passphrase(self, passphrase):
+        """Set passphrase to be used for decrypting."""
+        self.passphrase = passphrase
 
     def check(self):
         """Check file existence based on the register file set.
@@ -64,8 +69,27 @@ class ConsistencyCheck:
             self.fileset[filename]['encrypted_file_check'] = \
                     os.path.exists(enc_full_path)
 
-    def print_formatted(self):
-        """Output to STDOUT based on the check() method.
+    def delete_file(self, directory, filename):
+        """Try to delete file from filesystem."""
+        print "Deleting file on filesystem: {}".format(filename)
+        try:
+            os.unlink(os.path.expanduser(os.path.join(directory, filename)))
+        except OSError as e:
+            print "Failed to delete {}: {}".format(filename, str(e))
+            return False
+
+        return True
+
+    def clean_registry(self, filename):
+        """Clean entry from registry."""
+        print "Cleaning from registry: {}".format(filename)
+        with Inventory(self.database) as inventory:
+            inventory.clean_record(filename)
+
+        return True
+
+    def loop_through(self, clean=False, resync=False):
+        """Go through all entries and take action based on user input.
 
         This method can be called after check() has been executed,
         otherwise it cannot properly report on the existence of
@@ -78,19 +102,40 @@ class ConsistencyCheck:
         print 'Securedir:', self.parameters['securedir']
         print '\nSTATUS PLAINFILE' + ' ' * 26 + ' ENCFILE'
 
-        for filename in self.fileset:
+        for filename, entry in self.fileset.iteritems():
 
             unenc_exists = 'u'
             enc_exists = 'e'
             status = 'ok'
 
-            if not self.fileset[filename]['unencrypted_file_check']:
+            if not entry['unencrypted_file_check']:
                 unenc_exists = ''
-            if not self.fileset[filename]['encrypted_file_check']:
+            if not entry['encrypted_file_check']:
                 enc_exists = ''
-            if not unenc_exists or not enc_exists:
+
+            if clean and (not unenc_exists or not enc_exists):
+                if unenc_exists:
+                    print "delete unenc"
+                    self.delete_file(self.parameters['plaindir'],
+                                     entry['unencrypted_file'])
+
+                if enc_exists:
+                    print "delete enc"
+                    self.delete_file(self.parameters['securedir'],
+                                     entry['encrypted_file'])
+
+                self.clean_registry(entry['unencrypted_file'])
+                total_files -= 1
+            elif not unenc_exists and resync:
+                de = DirEncryption(None, self.database)
+                de.decrypt(entry['encrypted_file'],
+                           entry['unencrypted_file'],
+                           self.passphrase)
+                unenc_exists = 'u'
+            elif not unenc_exists or not enc_exists:
                 status = 'NOK'
                 count_nok += 1
+
 
             print '%-3s %1s%1s %-35s %-30s' % (status, unenc_exists, enc_exists,
                     self.fileset[filename]['unencrypted_file'],
