@@ -53,7 +53,7 @@ class DirEncryption:
     def set_parameters(self, args):
         """Set parameters based on database config and passed args."""
         self.verbose = False
-        if args.verbose:
+        if args and args.verbose:
             self.verbose = True
 
         with Inventory(self.database) as i:
@@ -70,6 +70,9 @@ class DirEncryption:
         self.gpg_keyring = parameters['gpg_keyring']
         self.gpg_homedir = os.path.expanduser(parameters['gpg_homedir'])
         self.gpg_binary  = os.path.expanduser(parameters['gpg_binary'])
+
+        if args is None:
+            return
 
         if args.plaindir:
             self.plaindir    = os.path.expanduser(args.plaindir)

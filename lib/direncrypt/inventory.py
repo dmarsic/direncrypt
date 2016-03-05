@@ -89,3 +89,9 @@ class Inventory:
         """Update program parameters."""
         self.cursor.execute('''UPDATE parameters
             SET value = ? WHERE key = ? ''', (value, key))
+
+    def clean_record(self, filename):
+        """Delete record based on the unencrypted filename."""
+        self.cursor.execute(
+                '''DELETE FROM register WHERE unencrypted_file = ?''',
+                (filename,))

@@ -30,6 +30,8 @@ Reports discrepancies unless switch is specified to clean up."""
 
 import sys
 import os
+import argparse
+import getpass
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              'lib'))
 
@@ -40,6 +42,26 @@ if __name__ == "__main__":
     database = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), 'inventory.sqlite')
 
+    parser = argparse.ArgumentParser(
+            'Check/fix consistency between unencrypted and encrypted files')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-c', '--clean',
+            action='store_true',
+            help='File does not exist, delete entry from register')
+    group.add_argument('-r', '--resync',
+            action='store_true',
+            help='Effectively decrypt existing encrypted file to plaindir')
+
+    args = parser.parse_args()
+
     c = ConsistencyCheck(database)
     c.check()
-    c.print_formatted()
+
+    if args.clean:
+        c.loop_through(clean=True)
+    elif args.resync:
+        passphrase = getpass.getpass('Passphrase: ')
+        c.set_passphrase(passphrase)
+        c.loop_through(resync=True)
+    else:
+        c.loop_through()
