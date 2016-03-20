@@ -59,7 +59,7 @@ class DirEncryption:
         with Inventory(self.database) as i:
             parameters = i.read_parameters()
         for parameter, value in parameters.iteritems():
-            self._print('Parameters: %-15s : %s', parameter, value)
+            self._print('Parameters: {:<15} : {}', parameter, value)
 
 
         self.last_timestamp = parameters['last_timestamp']
@@ -103,7 +103,7 @@ class DirEncryption:
             for plainfile in files.keys():
                 encryptedfile = self.generate_name()
                 self.encrypt(plainfile, encryptedfile)
-                self._print('Encrypted: %s ---> %s', plainfile, encryptedfile)
+                self._print('Encrypted: {} ---> {}', plainfile, encryptedfile)
             i.update_last_timestamp()
 
     def encrypt(self, plainfile, encfile):
@@ -140,7 +140,7 @@ class DirEncryption:
         encrypted_path = os.path.join(self.securedir, encfile)
         plain_path = os.path.join(self.plaindir, plainfile)
         self.gpg.decrypt(encrypted_path, plain_path, phrase)
-        self._print('Decrypt: %s ---> %s',
+        self._print('Decrypt: {} ---> {}',
                 encrypted_path, plain_path)
 
     def find_unencrypted_files(self, register):
@@ -156,7 +156,7 @@ class DirEncryption:
         value.
         """
         files = {}
-        self._print('Walking: %s', self.plaindir)
+        self._print('Walking: {}', self.plaindir)
 
         for (dirpath, dirnames, filenames) in os.walk(self.plaindir):
             for name in filenames:
@@ -171,9 +171,10 @@ class DirEncryption:
                     files[relative_path] = {'modified_time': mtime}
                 else:
                     # file is not changed since last run
-                    enc_flag = ''
-                self._print('List files: %1s %.0d (%s): %s',
-                        enc_flag, mtime, self.last_timestamp, relative_path)
+                    enc_flag = ' '
+                self._print('List files: {} {} ({}): {}',
+                        enc_flag, int(mtime), self.last_timestamp,
+                        relative_path)
         return files
 
     def generate_name(self):
@@ -182,5 +183,10 @@ class DirEncryption:
 
     def _print(self, message, *args):
         """Internal method to print messages to STDOUT."""
+        uargs = []
+        for a in args:
+            if isinstance(a, basestring):
+                a = a.encode('utf-8', errors='replace')
+            uargs.append(a)
         if self.verbose:
-            print message % args
+            print message.format(*uargs)
