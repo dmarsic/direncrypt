@@ -31,8 +31,6 @@ class ConsistencyCheck:
     Checks are performed based on the file register, which is kept in
     inventory.sqlite database.
     """
-    
-    @classmethod
 
     def __init__(self, database):
         """Load registered file list and program parameters.
