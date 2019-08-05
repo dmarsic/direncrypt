@@ -72,6 +72,14 @@ class Inventory:
                 'public_id':        row[2]
             }
         return rows
+    
+    def read_line_from_register(self, plainfile):
+        """Get encrypted filename from unencrypted filename in register"""
+        result = {}
+        for row in self.cursor.execute('''
+                SELECT encrypted_file FROM register WHERE unencrypted_file = ? ''',(plainfile,)):
+            result[plainfile] = {'encrypted_file':   row[0]}
+        return result[plainfile]['encrypted_file']
 
     def register(self, plain_path, enc_path, public_id):
         """Register input and output filenames into a database."""
