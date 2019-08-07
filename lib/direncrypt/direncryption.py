@@ -94,7 +94,7 @@ class DirEncryption:
         """Encrypt all new files from unencrypted directory.
 
         New files are those that have modified timestamp newer than
-        the timestamp of the last run. At the end of run, the timestamp
+        the timestamp of the last run. At the start of run, the timestamp
         is updated.
 
         The files are recursively searched for in the source directory.
@@ -102,6 +102,7 @@ class DirEncryption:
         register = {}
         with Inventory(self.database) as i:
             register = i.read_register()
+            i.update_last_timestamp()
             files = self.find_unencrypted_files(register) 
             for plainfile, val in files.items():
                 if not val['is_new']:
@@ -111,7 +112,6 @@ class DirEncryption:
                 encryptedfile = self.generate_name()
                 self.encrypt(plainfile, encryptedfile)
                 self._print('Encrypted: {} ---> {}', plainfile, encryptedfile)
-            i.update_last_timestamp()
 
     def encrypt(self, plainfile, encfile):
         """Encrypt the file and register input and output filenames."""
