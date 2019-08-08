@@ -100,27 +100,27 @@ class DirEncryption:
         The files are recursively searched for in the source directory.
         """
         register = {}
-        with Inventory(self.database) as i:
-            register = i.read_register()
-            i.update_last_timestamp()
+        with Inventory(self.database) as inv:
+            register = inv.read_register()
+            inv.update_last_timestamp()
             files = self.find_unencrypted_files(register) 
             for plainfile, val in files.items():
                 if not val['is_new']:
                     # remove old file in secure directory
-                    encfile = i.read_line_from_register(plainfile)
+                    encfile = inv.read_line_from_register(plainfile)
                     FileOps.delete_file(self.securedir, encfile)
                 encryptedfile = self.generate_name()
-                self.encrypt(plainfile, encryptedfile)
+                self.encrypt(plainfile, encryptedfile, inv)
                 self._print('Encrypted: {} ---> {}', plainfile, encryptedfile)
 
-    def encrypt(self, plainfile, encfile):
+    def encrypt(self, plainfile, encfile, inventory):
         """Encrypt the file and register input and output filenames."""
         plain_path = os.path.join(self.plaindir, plainfile)
         encrypted_path = os.path.join(self.securedir, encfile)
-
-        with Inventory(self.database) as i:
-            i.register(plainfile, encfile, self.public_id)
+        
         self.gpg.encrypt(plain_path, encrypted_path)
+        inventory.register(plainfile, encfile, self.public_id)
+
 
     def decrypt_all(self, passphrase):
         """Decrypt all files from encrypted source.
