@@ -23,6 +23,7 @@
 import os
 from inventory import Inventory
 from direncryption import DirEncryption
+from fileops import FileOps
 
 class ConsistencyCheck:
     """Consistency checks between unencrypted and encrypted directories.
@@ -69,17 +70,6 @@ class ConsistencyCheck:
             self.fileset[filename]['encrypted_file_check'] = \
                     os.path.exists(enc_full_path)
 
-    def delete_file(self, directory, filename):
-        """Try to delete file from filesystem."""
-        print "Deleting file on filesystem: {}".format(filename)
-        try:
-            os.unlink(os.path.expanduser(os.path.join(directory, filename)))
-        except OSError as e:
-            print "Failed to delete {}: {}".format(filename, str(e))
-            return False
-
-        return True
-
     def clean_registry(self, filename):
         """Clean entry from registry."""
         print "Cleaning from registry: {}".format(filename)
@@ -116,12 +106,12 @@ class ConsistencyCheck:
             if clean and (not unenc_exists or not enc_exists):
                 if unenc_exists:
                     print "delete unenc"
-                    self.delete_file(self.parameters['plaindir'],
+                    FileOps.delete_file(self.parameters['plaindir'],
                                      entry['unencrypted_file'])
 
                 if enc_exists:
                     print "delete enc"
-                    self.delete_file(self.parameters['securedir'],
+                    FileOps.delete_file(self.parameters['securedir'],
                                      entry['encrypted_file'])
 
                 self.clean_registry(entry['unencrypted_file'])

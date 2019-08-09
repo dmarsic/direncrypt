@@ -25,6 +25,7 @@ import uuid
 import logging
 from gpgops import GPGOps
 from inventory import Inventory
+from fileops import FileOps
 
 class DirEncryption:
     """DirEncryption encrypts and decrypts files between two directories.
@@ -87,33 +88,39 @@ class DirEncryption:
         if args.gpg_binary:
             self.gpg_binary  = os.path.expanduser(args.gpg_binary)
 
+    
+    
     def encrypt_all(self):
         """Encrypt all new files from unencrypted directory.
 
         New files are those that have modified timestamp newer than
-        the timestamp of the last run. At the end of run, the timestamp
+        the timestamp of the last run. At the start of run, the timestamp
         is updated.
 
         The files are recursively searched for in the source directory.
         """
         register = {}
-        with Inventory(self.database) as i:
-            register = i.read_register()
-            files = self.find_unencrypted_files(register)
-            for plainfile in files.keys():
+        with Inventory(self.database) as inv:
+            register = inv.read_register()
+            inv.update_last_timestamp()
+            files = self.find_unencrypted_files(register) 
+            for plainfile, val in files.items():
+                if not val['is_new']:
+                    # remove old file in secure directory
+                    encfile = inv.read_line_from_register(plainfile)
+                    FileOps.delete_file(self.securedir, encfile)
                 encryptedfile = self.generate_name()
-                self.encrypt(plainfile, encryptedfile)
+                self.encrypt(plainfile, encryptedfile, inv)
                 self._print('Encrypted: {} ---> {}', plainfile, encryptedfile)
-            i.update_last_timestamp()
 
-    def encrypt(self, plainfile, encfile):
+    def encrypt(self, plainfile, encfile, inventory):
         """Encrypt the file and register input and output filenames."""
         plain_path = os.path.join(self.plaindir, plainfile)
         encrypted_path = os.path.join(self.securedir, encfile)
-
-        with Inventory(self.database) as i:
-            i.register(plainfile, encfile, self.public_id)
+        
         self.gpg.encrypt(plain_path, encrypted_path)
+        inventory.register(plainfile, encfile, self.public_id)
+
 
     def decrypt_all(self, passphrase):
         """Decrypt all files from encrypted source.
@@ -152,8 +159,8 @@ class DirEncryption:
         register is the currently known list of encrypted files.
 
         Returns a dict, with relative path of the unencrypted files
-        for keys, and a dict with modified time key-value pair for
-        value.
+        for keys, and a dict with modified time key-value pair and
+        is_new boolean flag for values.
         """
         files = {}
         self._print('Walking: {}', self.plaindir)
@@ -164,11 +171,14 @@ class DirEncryption:
                 statinfo = os.stat(filepath)
                 mtime = statinfo.st_mtime
                 relative_path = filepath[(len(self.plaindir) + 1):]
-                if relative_path not in register \
-                        or mtime > int(self.last_timestamp):
-                    # new file or changed since last run
+                if relative_path not in register:
+                    # new file
                     enc_flag = '*'
-                    files[relative_path] = {'modified_time': mtime}
+                    files[relative_path] = {'modified_time': mtime, 'is_new':True}
+                elif relative_path in register and mtime > int(self.last_timestamp):
+                    # file exists and has changed since last run
+                    enc_flag = '*'
+                    files[relative_path] = {'modified_time': mtime, 'is_new':False}
                 else:
                     # file is not changed since last run
                     enc_flag = ' '
