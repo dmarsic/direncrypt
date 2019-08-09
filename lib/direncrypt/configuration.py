@@ -17,7 +17,7 @@
 #
 # Contact:
 # https://github.com/dmarsic
-# <dmars@protonmail.com> or <domagoj.marsic@gmail.com>
+# <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
 import os
@@ -27,7 +27,7 @@ from inventory import Inventory
 class CmdConfig(cmd.Cmd):
     """Command processor for configuration based on Cmd.
 
-    This library can be used with the program using 'direncryption'
+    This library can be used with the program using 'direncrypt'
     library, but is not needed by the library itself.
     """
 

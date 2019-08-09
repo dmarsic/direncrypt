@@ -17,7 +17,7 @@
 #
 # Contact:
 # https://github.com/dmarsic
-# <dmars@protonmail.com> or <domagoj.marsic@gmail.com>
+# <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
 import gnupg
@@ -34,7 +34,7 @@ class GPGOps:
     def __init__(self,
                  gpg_binary='gpg2',
                  gpg_recipient=None,
-                 gpg_homedir='~/.gnupg',
+                 gpg_homedir=os.path.expanduser('~/.gnupg'),
                  gpg_keyring='pubring.kbx',
                  verbose=False):
         """Set GPG parameters for encrypt/decrypt operations."""
