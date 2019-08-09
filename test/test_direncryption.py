@@ -17,7 +17,7 @@
 #
 # Contact:
 # https://github.com/dmarsic
-# <dmars@protonmail.com> or <domagoj.marsic@gmail.com>
+# <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
 import sys
@@ -116,11 +116,8 @@ def test_set_parameters__from_args(expanduser, Inventory, GPGOps):
 
 
 @patch('direncrypt.direncryption.GPGOps')
-@patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
-def test_encrypt(expanduser, Inventory, GPGOps):
-
-    Inventory().__enter__().read_parameters.return_value = saved_params
+def test_encrypt(expanduser, GPGOps):
 
     expanduser.side_effect = [
         saved_params['plaindir'],
@@ -128,10 +125,11 @@ def test_encrypt(expanduser, Inventory, GPGOps):
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
+    inventory = MagicMock()
 
     de = DirEncryption(test_args)
-    de.encrypt('plainfile', 'securefile')
-    eq_(Inventory().__enter__().register.call_count, 1)
+    de.encrypt('plainfile', 'securefile', inventory)
+    eq_(inventory.register.call_count, 1)
     de.gpg.encrypt.assert_called_once_with(
         os.path.join(saved_params['plaindir'], 'plainfile'),
         os.path.join(saved_params['securedir'], 'securefile')
@@ -145,16 +143,12 @@ def test_encrypt(expanduser, Inventory, GPGOps):
 @patch('direncrypt.direncryption.DirEncryption.encrypt')
 def test_encrypt_all__no_files(encrypt, find, expanduser, Inventory, GPGOps):
 
-    Inventory().__enter__().read_parameters.return_value = saved_params
-
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
-
-    Inventory().__enter__().read_register.return_value = {}
 
     de = DirEncryption(test_args)
     de.encrypt_all()
@@ -168,7 +162,8 @@ def test_encrypt_all__no_files(encrypt, find, expanduser, Inventory, GPGOps):
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.DirEncryption.find_unencrypted_files')
 @patch('direncrypt.direncryption.DirEncryption.encrypt')
-def test_encrypt_all(encrypt, find, expanduser, Inventory, GPGOps):
+@patch('direncrypt.direncryption.FileOps.delete_file')
+def test_encrypt_all(delete_file, encrypt, find, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
@@ -180,9 +175,9 @@ def test_encrypt_all(encrypt, find, expanduser, Inventory, GPGOps):
     ]
 
     find.return_value = {
-        'test_path_1': {'modified_time': 1234},
-        'test_path_2': {'modified_time': 1337},
-        'test_path_3': {'modified_time': 1414}
+        'test_path_1': {'modified_time': 1234, 'is_new': False},
+        'test_path_2': {'modified_time': 1337, 'is_new': False},
+        'test_path_3': {'modified_time': 1414, 'is_new': True}
     }
 
     de = DirEncryption(test_args)
@@ -193,6 +188,7 @@ def test_encrypt_all(encrypt, find, expanduser, Inventory, GPGOps):
     eq_(encrypt.call_args_list[1][0][0], 'test_path_2')
     eq_(encrypt.call_args_list[2][0][0], 'test_path_3')
     eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
+    eq_(delete_file.call_count, 2)
 
 
 @patch('direncrypt.direncryption.GPGOps')

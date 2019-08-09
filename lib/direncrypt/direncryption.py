@@ -17,7 +17,7 @@
 #
 # Contact:
 # https://github.com/dmarsic
-# <dmars@protonmail.com> or <domagoj.marsic@gmail.com>
+# <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
 import os
@@ -88,8 +88,8 @@ class DirEncryption:
         if args.gpg_binary:
             self.gpg_binary  = os.path.expanduser(args.gpg_binary)
 
-    
-    
+
+
     def encrypt_all(self):
         """Encrypt all new files from unencrypted directory.
 
@@ -103,7 +103,7 @@ class DirEncryption:
         with Inventory(self.database) as inv:
             register = inv.read_register()
             inv.update_last_timestamp()
-            files = self.find_unencrypted_files(register) 
+            files = self.find_unencrypted_files(register)
             for plainfile, val in files.items():
                 if not val['is_new']:
                     # remove old file in secure directory
@@ -117,7 +117,7 @@ class DirEncryption:
         """Encrypt the file and register input and output filenames."""
         plain_path = os.path.join(self.plaindir, plainfile)
         encrypted_path = os.path.join(self.securedir, encfile)
-        
+
         self.gpg.encrypt(plain_path, encrypted_path)
         inventory.register(plainfile, encfile, self.public_id)
 

@@ -24,26 +24,22 @@ import sys
 import os
 sys.path.append(os.path.join(os.getcwd(), 'lib'))
 
-
 import nose
 from nose.tools import *
-from mock import MagicMock, patch
-from direncrypt.configuration import CmdConfig, RunConfig
+from mock import patch
+from direncrypt.fileops import FileOps
 
-@patch('direncrypt.configuration.Inventory')
-def test_update(Inventory):
-    cmdconfig = CmdConfig()
-    cmdconfig.do_set_database('test_database')
-    cmdconfig.update('key_1', 'value_1')
 
-    eq_(Inventory().__enter__().update_parameters.call_count, 1)
+@patch('direncrypt.fileops.os.unlink')
+def test_delete_file(unlink):
+    """File deleted successfully."""
+    r = FileOps.delete_file('test_dir', 'test_file')
+    assert r == True
 
-    args = Inventory().__enter__().update_parameters.call_args
-    parameters = args[0]
-    eq_(parameters[0], 'key_1')
-    eq_(parameters[1], 'value_1')
 
-@patch('direncrypt.configuration.CmdConfig')
-def test_RunConfig(CmdConfig):
-    runconfig = RunConfig()
-    eq_(CmdConfig().cmdloop.call_count, 1)
+@patch('direncrypt.fileops.os.unlink')
+def test_delete_file__os_error(unlink):
+    """Error while deleting file."""
+    unlink.side_effect = OSError('Boom!')
+    r = FileOps.delete_file('test_dir', 'test_file')
+    assert r == False

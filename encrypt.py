@@ -19,7 +19,7 @@
 #
 # Contact:
 # https://github.com/dmarsic
-# <dmars@protonmail.com> or <domagoj.marsic@gmail.com>
+# <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
 """This program encrypts files from the source directory to the
