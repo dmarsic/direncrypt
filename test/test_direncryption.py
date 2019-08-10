@@ -341,8 +341,7 @@ def test_find_unencrypted_files(stat, walk, expanduser, Inventory, GPGOps):
         (os.path.join(saved_params['plaindir'], 'subdir_1'), [], ['unenc_3'])
     ]
 
-    stat = MagicMock()
-    stat.st_mtime = 1400
+    stat.return_value.st_mtime = 1400
 
     de = DirEncryption(test_args)
     files = de.find_unencrypted_files(register)

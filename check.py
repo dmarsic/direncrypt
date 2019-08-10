@@ -26,7 +26,8 @@
 based on the register list. Register is a schema in inventory.sqlite
 that contains mapping between encrypted and unencrypted files.
 
-Reports discrepancies unless switch is specified to clean up."""
+Reports discrepancies unless switch is specified to clean up.
+"""
 
 import sys
 import os
@@ -36,6 +37,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              'lib'))
 
 from direncrypt.consistency import ConsistencyCheck
+
 
 if __name__ == "__main__":
 

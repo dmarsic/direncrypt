@@ -22,7 +22,7 @@
 
 import os
 import cmd
-from inventory import Inventory
+from direncrypt.inventory import Inventory
 
 class CmdConfig(cmd.Cmd):
     """Command processor for configuration based on Cmd.
@@ -40,13 +40,13 @@ class CmdConfig(cmd.Cmd):
         """list
 
         Prints all stored settings."""
-        print '%-15s %s' % ('PARAMETER', 'VALUE')
-        print '-' * 40
+        print('%-15s %s' % ('PARAMETER', 'VALUE'))
+        print('-' * 40)
         with Inventory(self.database) as i:
             params = i.read_parameters(params_only=True)
             for key, value in i.read_parameters(params_only=True).iteritems():
-                print '%-15s %s' % (key, value)
-        print
+                print('%-15s %s' % (key, value))
+        print()
 
     def do_plaindir(self, directory):
         """plaindir [directory]
@@ -92,7 +92,7 @@ class CmdConfig(cmd.Cmd):
 
     def update(self, key, value):
         """Generic function to update a single parameter."""
-        print 'Setting %s to: %s' % (key, value)
+        print('Setting %s to: %s' % (key, value))
         with Inventory(self.database) as i:
             i.update_parameters(key, value)
 
@@ -105,7 +105,7 @@ class CmdConfig(cmd.Cmd):
         return True
 
 
-class RunConfig:
+class RunConfig(object):
     """Run command processor.
 
     This enables users to interactively set parameters used by direncrypt.
@@ -115,10 +115,10 @@ class RunConfig:
 
     def __init__(self, database=None):
         """Describe usage and process set parameters."""
-        print 'Use "<parameter_name> <value>" to set parameter value.'
-        print 'Use "list" to print current values, or "done" to exit.'
-        print 'Enter "help [<parameter>]" for additional help.'
-        print
+        print('Use "<parameter_name> <value>" to set parameter value.')
+        print('Use "list" to print current values, or "done" to exit.')
+        print('Enter "help [<parameter>]" for additional help.')
+        print()
 
         if database is None:
             database = 'inventory.sqlite'

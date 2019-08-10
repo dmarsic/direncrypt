@@ -21,13 +21,16 @@
 #------------------------------------------------------------------------------
 
 import os
+import sys
 import uuid
 import logging
-from gpgops import GPGOps
-from inventory import Inventory
-from fileops import FileOps
+from direncrypt.gpgops import GPGOps
+from direncrypt.inventory import Inventory
+from direncrypt.fileops import FileOps
+from direncrypt.util import printit
 
-class DirEncryption:
+
+class DirEncryption(object):
     """DirEncryption encrypts and decrypts files between two directories.
 
     One directory serves as a repository of unencrypted files, and the
@@ -59,8 +62,9 @@ class DirEncryption:
 
         with Inventory(self.database) as i:
             parameters = i.read_parameters()
-        for parameter, value in parameters.iteritems():
-            self._print('Parameters: {:<15} : {}', parameter, value)
+        for parameter, value in parameters.items():
+            if self.verbose:
+                printit('Parameters: {:<15} : {}', parameter, value)
 
 
         self.last_timestamp = parameters['last_timestamp']
@@ -111,7 +115,8 @@ class DirEncryption:
                     FileOps.delete_file(self.securedir, encfile)
                 encryptedfile = self.generate_name()
                 self.encrypt(plainfile, encryptedfile, inv)
-                self._print('Encrypted: {} ---> {}', plainfile, encryptedfile)
+                if self.verbose:
+                    printit('Encrypted: {} ---> {}', plainfile, encryptedfile)
 
     def encrypt(self, plainfile, encfile, inventory):
         """Encrypt the file and register input and output filenames."""
@@ -132,7 +137,7 @@ class DirEncryption:
         register = {}
         with Inventory(self.database) as i:
             register = i.read_register()
-            for filename, record in register.iteritems():
+            for filename, record in register.items():
                 if record['public_id'] != self.public_id:
                     continue
                 try:
@@ -146,9 +151,9 @@ class DirEncryption:
         """Decrypt the file using a supplied passphrase."""
         encrypted_path = os.path.join(self.securedir, encfile)
         plain_path = os.path.join(self.plaindir, plainfile)
+        if self.verbose:
+            printit('Decrypt: {} ---> {}', encrypted_path, plain_path)
         self.gpg.decrypt(encrypted_path, plain_path, phrase)
-        self._print('Decrypt: {} ---> {}',
-                encrypted_path, plain_path)
 
     def find_unencrypted_files(self, register):
         """List all files that need to be encrypted.
@@ -163,7 +168,8 @@ class DirEncryption:
         is_new boolean flag for values.
         """
         files = {}
-        self._print('Walking: {}', self.plaindir)
+        if self.verbose:
+            printit('Walking: {}', self.plaindir)
 
         for (dirpath, dirnames, filenames) in os.walk(self.plaindir):
             for name in filenames:
@@ -174,29 +180,20 @@ class DirEncryption:
                 if relative_path not in register:
                     # new file
                     enc_flag = '*'
-                    files[relative_path] = {'modified_time': mtime, 'is_new':True}
+                    files[relative_path] = {'modified_time': mtime, 'is_new': True}
                 elif relative_path in register and mtime > int(self.last_timestamp):
                     # file exists and has changed since last run
                     enc_flag = '*'
-                    files[relative_path] = {'modified_time': mtime, 'is_new':False}
+                    files[relative_path] = {'modified_time': mtime, 'is_new': False}
                 else:
                     # file is not changed since last run
                     enc_flag = ' '
-                self._print('List files: {} {} ({}): {}',
-                        enc_flag, int(mtime), self.last_timestamp,
-                        relative_path)
+                if self.verbose:
+                    printit('List files: {} {} ({}): {}',
+                            enc_flag, int(mtime), self.last_timestamp,
+                            relative_path)
         return files
 
     def generate_name(self):
         """Return a unique file name for encrypted file."""
         return str(uuid.uuid4())
-
-    def _print(self, message, *args):
-        """Internal method to print messages to STDOUT."""
-        uargs = []
-        for a in args:
-            if isinstance(a, basestring):
-                a = a.encode('utf-8', errors='replace')
-            uargs.append(a)
-        if self.verbose:
-            print message.format(*uargs)

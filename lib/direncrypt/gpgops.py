@@ -20,10 +20,12 @@
 # <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
-import gnupg
 import os
+import gnupg
+from direncrypt.util import PYTHON_VERSION
 
-class GPGOps:
+
+class GPGOps(object):
     """A simple wrapper for GPG encryption/decryption.
 
     The class provides functions for encrypting and decrypting a single
@@ -54,10 +56,14 @@ class GPGOps:
 
     def decrypt(self, encfile, plainfile, phrase):
         """Decrypt content from encfile into plainfile."""
+        if PYTHON_VERSION == 2 and \
+                not plainfile == plainfile.encode('ascii', errors='replace'):
+            plainfile = plainfile.encode('ascii', errors='ignore')
+            print('Python 2: python-gnupg doesn\'t support unicode in filenames. '
+                  'Decrypting to: {}'.format(plainfile))
         plaindir = os.path.dirname(plainfile)
         if not os.path.exists(plaindir):
             os.makedirs(plaindir)
-
         with open(encfile, mode='rb') as f:
             self.gpg.decrypt(f.read(),
                              passphrase=phrase,

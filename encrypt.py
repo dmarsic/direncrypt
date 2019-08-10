@@ -68,11 +68,11 @@ from direncrypt.direncryption import DirEncryption
 
 
 def header():
-    print """direncrypt  Copyright (C) 2015  Domagoj Marsic
+    print("""direncrypt  Copyright (C) 2015  Domagoj Marsic
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
 under certain conditions; see 'LICENSE' file for details.
-"""
+""")
 
 
 if __name__ == '__main__':
@@ -120,7 +120,5 @@ if __name__ == '__main__':
         e.decrypt_all(passphrase)
     else:
         header()
-        print 'Please specify encrypt (-e) or decrypt (-d) operation,'
-        print 'or --configure to set up configuration.'
-
-    exit(0)
+        print('Please specify encrypt (-e) or decrypt (-d) operation,')
+        print('or --configure to set up configuration.')

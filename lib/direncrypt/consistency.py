@@ -21,11 +21,12 @@
 #------------------------------------------------------------------------------
 
 import os
-from inventory import Inventory
-from direncryption import DirEncryption
-from fileops import FileOps
+from direncrypt.inventory import Inventory
+from direncrypt.direncryption import DirEncryption
+from direncrypt.fileops import FileOps
 
-class ConsistencyCheck:
+
+class ConsistencyCheck(object):
     """Consistency checks between unencrypted and encrypted directories.
 
     Checks are performed based on the file register, which is kept in
@@ -72,10 +73,9 @@ class ConsistencyCheck:
 
     def clean_registry(self, filename):
         """Clean entry from registry."""
-        print "Cleaning from registry: {}".format(filename)
+        print("Cleaning from registry: {}".format(filename))
         with Inventory(self.database) as inventory:
             inventory.clean_record(filename)
-
         return True
 
     def loop_through(self, clean=False, resync=False):
@@ -88,11 +88,11 @@ class ConsistencyCheck:
         count_nok = 0
         total_files = len(self.fileset)
 
-        print 'Plaindir:', self.parameters['plaindir']
-        print 'Securedir:', self.parameters['securedir']
-        print '\nSTATUS PLAINFILE' + ' ' * 26 + ' ENCFILE'
+        print('Plaindir: %s' % self.parameters['plaindir'])
+        print('Securedir: %s' % self.parameters['securedir'])
+        print('\nSTATUS PLAINFILE' + ' ' * 26 + ' ENCFILE')
 
-        for filename, entry in self.fileset.iteritems():
+        for filename, entry in self.fileset.items():
 
             unenc_exists = 'u'
             enc_exists = 'e'
@@ -105,12 +105,12 @@ class ConsistencyCheck:
 
             if clean and (not unenc_exists or not enc_exists):
                 if unenc_exists:
-                    print "delete unenc"
+                    print("delete unenc")
                     FileOps.delete_file(self.parameters['plaindir'],
                                      entry['unencrypted_file'])
 
                 if enc_exists:
-                    print "delete enc"
+                    print("delete enc")
                     FileOps.delete_file(self.parameters['securedir'],
                                      entry['encrypted_file'])
 
@@ -127,9 +127,9 @@ class ConsistencyCheck:
                 count_nok += 1
 
 
-            print '%-3s %1s%1s %-35s %-30s' % (status, unenc_exists, enc_exists,
+            print('%-3s %1s%1s %-35s %-30s' % (status, unenc_exists, enc_exists,
                     self.fileset[filename]['unencrypted_file'],
-                    self.fileset[filename]['encrypted_file'])
+                    self.fileset[filename]['encrypted_file']))
 
-        print '\nTotal files in the register:', total_files
-        print 'Check: %d ok, %d not ok' % (total_files - count_nok, count_nok)
+        print('\nTotal files in the register: %d' % total_files)
+        print('Check: %d ok, %d not ok' % (total_files - count_nok, count_nok))
