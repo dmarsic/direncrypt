@@ -53,6 +53,9 @@ if __name__ == "__main__":
     group.add_argument('-r', '--resync',
             action='store_true',
             help='Effectively decrypt existing encrypted file to plaindir')
+    group.add_argument('-d', '--delete',
+            action='store_true',
+            help='Delete orphans encoded files (which are not in register')
 
     args = parser.parse_args()
 
@@ -61,6 +64,8 @@ if __name__ == "__main__":
 
     if args.clean:
         c.loop_through(clean=True)
+    elif args.delete:
+        c.delete_orphans_encoded_files()
     elif args.resync:
         passphrase = getpass.getpass('Passphrase: ')
         c.set_passphrase(passphrase)

@@ -133,3 +133,16 @@ class ConsistencyCheck(object):
 
         print('\nTotal files in the register: %d' % total_files)
         print('Check: %d ok, %d not ok' % (total_files - count_nok, count_nok))
+        
+    def delete_orphans_encoded_files(self):
+        """ Delete orphans encoded files (which are not in register). """
+        with Inventory(self.database) as inv:
+            enc_files = list()
+            for (dirpath, dirnames, filenames) in os.walk(self.parameters['securedir']):
+                for name in filenames:
+                    enc_files.append(name)
+            elt = 0
+            while elt < len(enc_files):
+                if not inv.exists_encrypted_file(enc_files[elt]):  
+                    FileOps.delete_file(self.parameters['securedir'], enc_files[elt])
+                elt += 1

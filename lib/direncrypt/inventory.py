@@ -103,3 +103,15 @@ class Inventory:
         self.cursor.execute(
                 '''DELETE FROM register WHERE unencrypted_file = ?''',
                 (filename,))
+        
+    def exists_encrypted_file(self, filename):
+        """tests if an encoded filename exists in register.
+        
+        Returns True if 'filename' is found, False otherwise.
+        """
+        self.cursor.execute('''
+               SELECT encrypted_file FROM register WHERE encrypted_file = ? ''',(filename,))
+        enc_filenames = self.cursor.fetchall()
+        nb = len(enc_filenames)
+        result = True if nb==1 else False
+        return result
