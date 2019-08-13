@@ -135,7 +135,11 @@ class ConsistencyCheck(object):
         print('Check: %d ok, %d not ok' % (total_files - count_nok, count_nok))
         
     def delete_orphans_encoded_files(self):
-        """ Delete orphans encoded files (which are not in register). """
+        """ Delete orphans encoded files (which are not in register). 
+        
+        normally this should not happen, but it can happen anyway 
+        after a crash during encryption.
+        """
         with Inventory(self.database) as inv:
             enc_files = list()
             for (dirpath, dirnames, filenames) in os.walk(self.parameters['securedir']):
