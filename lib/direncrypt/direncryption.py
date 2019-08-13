@@ -164,8 +164,7 @@ class DirEncryption(object):
         register is the currently known list of encrypted files.
 
         Returns a dict, with relative path of the unencrypted files
-        for keys, and a dict with modified time key-value pair and
-        is_new boolean flag for values.
+        for keys, and is_new boolean flag for values.
         """
         files = {}
         if self.verbose:
@@ -180,11 +179,11 @@ class DirEncryption(object):
                 if relative_path not in register:
                     # new file
                     enc_flag = '*'
-                    files[relative_path] = {'modified_time': mtime, 'is_new': True}
+                    files[relative_path] = {'is_new': True}
                 elif relative_path in register and mtime > int(self.last_timestamp):
                     # file exists and has changed since last run
                     enc_flag = '*'
-                    files[relative_path] = {'modified_time': mtime, 'is_new': False}
+                    files[relative_path] = {'is_new': False}
                 else:
                     # file is not changed since last run
                     enc_flag = ' '
@@ -193,7 +192,7 @@ class DirEncryption(object):
                             enc_flag, int(mtime), self.last_timestamp,
                             relative_path)
         return files
-
+    
     def generate_name(self):
         """Return a unique file name for encrypted file."""
         return str(uuid.uuid4())
