@@ -44,7 +44,7 @@ class CmdConfig(cmd.Cmd):
         print('-' * 40)
         with Inventory(self.database) as i:
             params = i.read_parameters(params_only=True)
-            for key, value in i.read_parameters(params_only=True).iteritems():
+            for key, value in i.read_parameters(params_only=True).items():
                 print('%-15s %s' % (key, value))
         print()
 
