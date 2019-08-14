@@ -55,21 +55,44 @@ class Inventory:
                 params[row[0]] = row[1]
         return params
 
-    def read_register(self):
-        """Get information on all registered encrypted files.
+    def read_all_register(self):
+        """Get information on all registered regular files and symlinks.
 
         Returns a dict with unencrypted filename for keys, having
-        a dict of unencrypted file, encrypted file and public id
-        as value.
+        a dict of unencrypted file, encrypted file, public id,
+        is_link and target as value.
         """
         rows = {}
         for row in self.cursor.execute('''
-                SELECT unencrypted_file, encrypted_file, public_id
-                FROM register'''):
+                SELECT unencrypted_file, encrypted_file, public_id,
+                is_link, target FROM register'''):
             rows[row[0]] = {
                 'unencrypted_file': row[0],
                 'encrypted_file':   row[1],
-                'public_id':        row[2]
+                'public_id':        row[2],
+                'is_link':          row[3],
+                'target':           row[4]
+            }
+        return rows
+    
+    def read_registered_files(self):
+        """Get information on all registered regular files.
+
+        Returns a dict with unencrypted filename for keys, having
+        a dict of unencrypted file, encrypted file, public id,
+        is_link and target as value.
+        """
+        rows = {}
+        for row in self.cursor.execute('''
+                SELECT unencrypted_file, encrypted_file, public_id,
+                is_link, target FROM register WHERE is_link=0 and
+                encrypted_file IS NOT NULL'''):
+            rows[row[0]] = {
+                'unencrypted_file': row[0],
+                'encrypted_file':   row[1],
+                'public_id':        row[2],
+                'is_link':          row[3],
+                'target':           row[4]
             }
         return rows
     
@@ -81,12 +104,13 @@ class Inventory:
             result[plainfile] = {'encrypted_file':   row[0]}
         return result[plainfile]['encrypted_file']
 
-    def register(self, plain_path, enc_path, public_id):
+    def register(self, plain_path, enc_path, public_id, is_link, target):
         """Register input and output filenames into a database."""
+        is_link_int = 0 if is_link==False else 1
         self.cursor.execute('''INSERT OR REPLACE INTO register
-            (unencrypted_file, encrypted_file, public_id)
-            VALUES (?,?,?)''',
-            (plain_path, enc_path, public_id))
+            (unencrypted_file, encrypted_file, public_id, is_link, target)
+            VALUES (?,?,?,?,?)''',
+            (plain_path, enc_path, public_id, is_link_int, target))
 
     def update_last_timestamp(self):
         """Update last timestamp in the database."""

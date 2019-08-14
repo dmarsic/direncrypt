@@ -41,7 +41,7 @@ class ConsistencyCheck(object):
         self.database = database
         with Inventory(self.database) as inventory:
             self.parameters = inventory.read_parameters()
-            self.fileset = inventory.read_register()
+            self.fileset = inventory.read_registered_files()
 
     def set_passphrase(self, passphrase):
         """Set passphrase to be used for decrypting."""

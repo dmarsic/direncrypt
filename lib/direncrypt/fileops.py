@@ -12,3 +12,8 @@ class FileOps(object):
             print("Failed to delete {}: {}".format(filename, str(e)))
             return False
         return True
+    
+    @staticmethod
+    def create_symlink(target, linkpath):
+        """Create a symlink pointing to target"""
+        os.symlink(target, linkpath)
