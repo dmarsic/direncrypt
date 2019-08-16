@@ -134,11 +134,12 @@ class ConsistencyCheck(object):
         print('\nTotal files in the register: %d' % total_files)
         print('Check: %d ok, %d not ok' % (total_files - count_nok, count_nok))
         
-    def delete_orphans_encoded_files(self):
+    def delete_orphans_encrypted_files(self):
         """ Delete orphans encoded files (which are not in register). 
         
         normally this should not happen, but it can happen anyway 
-        after a crash during encryption.
+        after a crash during encryption or by modifying register
+        manually.
         """
         with Inventory(self.database) as inv:
             enc_files = list()

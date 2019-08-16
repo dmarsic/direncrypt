@@ -99,8 +99,8 @@ class Inventory:
     def read_line_from_register(self, plainfile):
         """Get encrypted filename from unencrypted filename in register"""
         result = {}
-        for row in self.cursor.execute('''
-                SELECT encrypted_file FROM register WHERE unencrypted_file = ? ''',(plainfile,)):
+        request = "SELECT encrypted_file FROM register WHERE unencrypted_file = ?"
+        for row in self.cursor.execute(request, (plainfile,)):
             result[plainfile] = {'encrypted_file':   row[0]}
         return result[plainfile]['encrypted_file']
 
@@ -124,17 +124,16 @@ class Inventory:
 
     def clean_record(self, filename):
         """Delete record based on the unencrypted filename."""
-        self.cursor.execute(
-                '''DELETE FROM register WHERE unencrypted_file = ?''',
-                (filename,))
+        request = "DELETE FROM register WHERE unencrypted_file = ?"
+        self.cursor.execute(request, (filename,))
         
     def exists_encrypted_file(self, filename):
         """tests if an encoded filename exists in register.
         
         Returns True if 'filename' is found, False otherwise.
         """
-        self.cursor.execute('''
-               SELECT encrypted_file FROM register WHERE encrypted_file = ? ''',(filename,))
+        request = "SELECT encrypted_file FROM register WHERE encrypted_file = ?"
+        self.cursor.execute(request, (filename,))
         enc_filenames = self.cursor.fetchall()
         nb = len(enc_filenames)
         result = True if nb==1 else False

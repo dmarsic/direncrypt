@@ -128,7 +128,7 @@ def test_encrypt(expanduser, GPGOps):
     inventory = MagicMock()
 
     de = DirEncryption(test_args)
-    de.encrypt('plainfile', 'securefile', inventory)
+    de.encrypt('plainfile', 'securefile', inventory, 0, 'target')
     eq_(inventory.register.call_count, 1)
     de.gpg.encrypt.assert_called_once_with(
         os.path.join(saved_params['plaindir'], 'plainfile'),
@@ -163,9 +163,11 @@ def test_encrypt_all__no_files(encrypt, find, expanduser, Inventory, GPGOps):
 @patch('direncrypt.direncryption.DirEncryption.find_unencrypted_files')
 @patch('direncrypt.direncryption.DirEncryption.encrypt')
 @patch('direncrypt.direncryption.FileOps.delete_file')
-def test_encrypt_all(delete_file, encrypt, find, expanduser, Inventory, GPGOps):
+@patch('direncrypt.direncryption.DirEncryption.find_unregistered_links')
+def test_encrypt_all(find_ulinks, delete_file, encrypt, find_ufiles, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
+
 
     expanduser.side_effect = [
         saved_params['plaindir'],
@@ -174,21 +176,31 @@ def test_encrypt_all(delete_file, encrypt, find, expanduser, Inventory, GPGOps):
         saved_params['gpg_binary']
     ]
 
-    find.return_value = {
-        'test_path_1': {'modified_time': 1234, 'is_new': False},
-        'test_path_2': {'modified_time': 1337, 'is_new': False},
-        'test_path_3': {'modified_time': 1414, 'is_new': True}
+    find_ufiles.return_value = {
+        'test_path_1': {'is_new': False},
+        'test_path_2': {'is_new': False},
+        'test_path_3': {'is_new': True}
+    }
+    
+    find_ulinks.return_value = {
+        'test_link_1': {'target': 'target_1', 'is_new': False},
+        'test_link_2': {'target': 'target_2', 'is_new': True}
     }
 
     de = DirEncryption(test_args)
     de.encrypt_all()
 
-    eq_(encrypt.call_count, 3)
+    eq_(encrypt.call_count, 5)
+    eq_(delete_file.call_count, 2)
+    eq_(find_ufiles.call_count, 1)
+    eq_(find_ulinks.call_count, 1)
     eq_(encrypt.call_args_list[0][0][0], 'test_path_1')
     eq_(encrypt.call_args_list[1][0][0], 'test_path_2')
     eq_(encrypt.call_args_list[2][0][0], 'test_path_3')
     eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
-    eq_(delete_file.call_count, 2)
+    eq_(Inventory().__enter__().clean_record.call_count, 1)
+    eq_(Inventory().__enter__().clean_record.call_args_list[0][0][0], 'test_link_1')
+
 
 
 @patch('direncrypt.direncryption.GPGOps')
@@ -243,32 +255,51 @@ def test_decrypt_all__no_files(decrypt, expanduser,
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.DirEncryption.decrypt')
-def test_decrypt_all(decrypt, expanduser, Inventory, GPGOps):
+@patch('direncrypt.direncryption.FileOps.create_symlink')
+def test_decrypt_all(create_symlink, decrypt, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['public_id'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
 
-    Inventory().__enter__().read_register.return_value = {
-        'unenc_file_1': {
+    Inventory().__enter__().read_all_register.return_value = {
+        'unenc_1': {
             'unencrypted_file': 'unenc_1',
             'encrypted_file': 'uuid-1',
-            'public_id': saved_params['public_id']
+            'public_id': saved_params['public_id'],
+            'is_link': 0
         },
-        'unenc_file_2': {
+        'unenc_2': {
             'unencrypted_file': 'unenc_2',
             'encrypted_file': 'uuid-2',
-            'public_id': saved_params['public_id']
+            'public_id': 'some_other_id',
+            'is_link': 0
         },
-        'unenc_file_3': {
+        'unenc_3': {
             'unencrypted_file': 'unenc_3',
             'encrypted_file': 'uuid-3',
-            'public_id': 'some_other_id'
+            'public_id': saved_params['public_id'],
+            'is_link': 0
+        },
+        'unenc_4': {
+            'unencrypted_file': 'unenc_4',
+            'encrypted_file': 'uuid-4',
+            'public_id': saved_params['public_id'],
+            'is_link': 1,
+            'target': 'target_4'
+        },
+        'unenc_5': {
+            'unencrypted_file': 'unenc_5',
+            'encrypted_file': 'uuid-5',
+            'public_id': 'some_other_id',
+            'is_link': 1,
+            'target': 'target_5'
         }
 
     }
@@ -277,8 +308,9 @@ def test_decrypt_all(decrypt, expanduser, Inventory, GPGOps):
     de.decrypt_all('trustno1')
 
     eq_(de.decrypt.call_count, 2)
+    eq_(create_symlink.call_count, 1)
     eq_(de.decrypt.call_args_list[0][0], ('uuid-1', 'unenc_1', 'trustno1'))
-    eq_(de.decrypt.call_args_list[1][0], ('uuid-2', 'unenc_2', 'trustno1'))
+    eq_(de.decrypt.call_args_list[1][0], ('uuid-3', 'unenc_3', 'trustno1'))
 
 
 @patch('direncrypt.direncryption.GPGOps')
@@ -317,7 +349,8 @@ def test_find_unencrypted_files__empty_dir(walk, expanduser, Inventory, GPGOps):
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.os.walk')
 @patch('direncrypt.direncryption.os.stat')
-def test_find_unencrypted_files(stat, walk, expanduser, Inventory, GPGOps):
+@patch('direncrypt.direncryption.os.path.islink')
+def test_find_unencrypted_files(islink, stat, walk, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
@@ -332,20 +365,82 @@ def test_find_unencrypted_files(stat, walk, expanduser, Inventory, GPGOps):
         'unenc_1': {
             'unencrypted_file': 'unenc_1',
             'encrypted_file': 'uuid-1',
-            'public_id': saved_params['public_id']
+            'public_id': saved_params['public_id'],
+            'is_link':0
         }
     }
 
     walk.return_value = [
-        (saved_params['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2']),
-        (os.path.join(saved_params['plaindir'], 'subdir_1'), [], ['unenc_3'])
+        (saved_params['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2', 'unenc_3']),
+        (os.path.join(saved_params['plaindir'], 'subdir_1'), [], ['unenc_4'])
     ]
 
-    stat.return_value.st_mtime = 1400
-
+    stat.return_value.st_mtime = 1234567895
+    islink.return_value = True
     de = DirEncryption(test_args)
     files = de.find_unencrypted_files(register)
+    eq_(len(files), 0)
+    
+    islink.reset_mock()
+    islink.return_value = False
+    files = de.find_unencrypted_files(register)
+    eq_(len(files), 4)
+    ok_('unenc_3' in files.keys())
+    ok_(os.path.join('subdir_1', 'unenc_4') in files.keys())
+    
+    stat.reset_mock()
+    stat.return_value.st_mtime = 1234567885
+    files = de.find_unencrypted_files(register)
+    eq_(len(files), 3)
+    
+@patch('direncrypt.direncryption.GPGOps')
+@patch('direncrypt.direncryption.Inventory')
+@patch('direncrypt.direncryption.os.path.expanduser')
+@patch('direncrypt.direncryption.os.walk')
+@patch('direncrypt.direncryption.os.stat')
+@patch('direncrypt.direncryption.os.path.islink')
+@patch('direncrypt.direncryption.os.readlink')
+def test_find_unregistered_links(readlink, islink, stat, walk, expanduser, Inventory, GPGOps):
 
-    eq_(len(files), 2)
-    ok_('unenc_2' in files.keys())
-    ok_(os.path.join('subdir_1', 'unenc_3') in files.keys())
+    Inventory().__enter__().read_parameters.return_value = saved_params
+
+    expanduser.side_effect = [
+        saved_params['plaindir'],
+        saved_params['securedir'],
+        saved_params['gpg_homedir'],
+        saved_params['gpg_binary']
+    ]
+
+    register = {
+        'unenc_1': {
+            'unencrypted_file': 'unenc_1',
+            'encrypted_file': 'uuid-1',
+            'public_id': saved_params['public_id'],
+            'is_link':1,
+            'target': 'target_1'
+        }
+    }
+
+    walk.return_value = [
+        (saved_params['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2', 'unenc_3']),
+        (os.path.join(saved_params['plaindir'], 'subdir_1'), [], ['unenc_4'])
+    ]
+
+    stat.return_value.st_mtime = 1234567895
+    islink.return_value = True
+    readlink.return_value = 'my_target'
+    de = DirEncryption(test_args)
+    links = de.find_unregistered_links(register)
+    eq_(len(links), 6)
+    ok_('unenc_3' in links.keys())
+    ok_(os.path.join('subdir_1', 'unenc_4') in links.keys())
+    
+    stat.reset_mock()
+    stat.return_value.st_mtime = 1234567885
+    links = de.find_unregistered_links(register)
+    eq_(len(links), 5)
+    
+    islink.reset_mock()
+    islink.return_value = False
+    links = de.find_unregistered_links(register)
+    eq_(len(links), 0)

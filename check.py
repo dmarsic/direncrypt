@@ -65,7 +65,7 @@ if __name__ == "__main__":
     if args.clean:
         c.loop_through(clean=True)
     elif args.delete:
-        c.delete_orphans_encoded_files()
+        c.delete_orphans_encrypted_files()
     elif args.resync:
         passphrase = getpass.getpass('Passphrase: ')
         c.set_passphrase(passphrase)

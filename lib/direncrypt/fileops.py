@@ -1,19 +1,25 @@
 import os
+from direncrypt.util import printit
 
 class FileOps(object):
 
     @staticmethod
     def delete_file(directory, filename):
         """Try to delete file from filesystem."""
-        print("Deleting file on filesystem: {}".format(filename))
+        printit("Deleting file on filesystem: {}", filename)
         try:
             os.unlink(os.path.expanduser(os.path.join(directory, filename)))
         except OSError as e:
-            print("Failed to delete {}: {}".format(filename, str(e)))
+            printit("Failed to delete {}: {}",filename, str(e))
             return False
         return True
     
     @staticmethod
     def create_symlink(target, linkpath):
-        """Create a symlink pointing to target"""
-        os.symlink(target, linkpath)
+        """Try to create a symlink pointing to target"""
+        try:
+            os.symlink(target, linkpath)
+        except Exception as e:
+            printit('Failed to create symlink : {} ---> {}', linkpath, target)
+            return False
+        return True

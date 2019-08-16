@@ -57,16 +57,16 @@ def test_read_parameters(connect):
     eq_(params['state-key-1'], 'state-value-1')
 
 @patch('direncrypt.inventory.sqlite3.connect')
-def test_read_register(connect):
+def test_read_all_register(connect):
 
     connect().cursor().execute.return_value = [
-        ('unenc_1', 'uuid-1', 'public_id_1'),
-        ('unenc_2', 'uuid-2', 'public_id_2'),
-        ('unenc_3', 'uuid-3', 'public_id_3')
+        ('unenc_1', 'uuid-1', 'public_id_1', 0, 'target_1'),
+        ('unenc_2', 'uuid-2', 'public_id_2', 1, 'target_2'),
+        ('unenc_3', 'uuid-3', 'public_id_3', 1, 'target_3')
     ]
 
     with Inventory('test_database') as inv:
-        rows = inv.read_register()
+        rows = inv.read_all_register()
 
     eq_(len(rows), 3)
     for f in ['unenc_1', 'unenc_2', 'unenc_3']:
@@ -74,17 +74,39 @@ def test_read_register(connect):
     eq_(rows['unenc_2']['unencrypted_file'], 'unenc_2')
     eq_(rows['unenc_2']['encrypted_file'], 'uuid-2')
     eq_(rows['unenc_2']['public_id'], 'public_id_2')
+    eq_(rows['unenc_2']['is_link'], 1)
+    eq_(rows['unenc_2']['target'], 'target_2')
 
+@patch('direncrypt.inventory.sqlite3.connect')
+def test_read_registered_files(connect):
+
+    connect().cursor().execute.return_value = [
+        ('unenc_1', 'uuid-1', 'public_id_1', 0, 'target_1'),
+        ('unenc_2', 'uuid-2', 'public_id_2', 1, 'target_2'),
+        ('unenc_3', 'uuid-3', 'public_id_3', 1, 'target_3')
+    ]
+
+    with Inventory('test_database') as inv:
+        rows = inv.read_registered_files()
+
+    eq_(len(rows), 3)
+    for f in ['unenc_1', 'unenc_2', 'unenc_3']:
+        ok_(f in rows.keys())
+    eq_(rows['unenc_2']['unencrypted_file'], 'unenc_2')
+    eq_(rows['unenc_2']['encrypted_file'], 'uuid-2')
+    eq_(rows['unenc_2']['public_id'], 'public_id_2')
+    eq_(rows['unenc_2']['is_link'], 1)
+    eq_(rows['unenc_2']['target'], 'target_2')
 
 @patch('direncrypt.inventory.sqlite3.connect')
 def test_register(connect):
 
     with Inventory('test_database') as inv:
-        inv.register('plain', 'encrypted', 'public_id')
+        inv.register('plain', 'encrypted', 'public_id', 1, 'target')
 
         eq_(inv.cursor.execute.call_count, 1)
         eq_(inv.cursor.execute.call_args[0][1],
-            ('plain', 'encrypted', 'public_id'))
+            ('plain', 'encrypted', 'public_id', 1, 'target'))
 
 @patch('direncrypt.inventory.sqlite3.connect')
 def test_update_parameters(connect):
@@ -94,3 +116,13 @@ def test_update_parameters(connect):
 
         eq_(inv.cursor.execute.call_count, 1)
         eq_(inv.cursor.execute.call_args[0][1], ('value_1', 'key_1'))
+        
+@patch('direncrypt.inventory.sqlite3.connect')
+def test_exists_encrypted_file(connect):
+
+    with Inventory('test_database') as inv:
+        r = inv.exists_encrypted_file('filename')
+
+        assert inv.cursor.execute.call_count==1
+        assert inv.cursor.execute.call_args[0][1]==('filename',)
+        assert r==True or r==False

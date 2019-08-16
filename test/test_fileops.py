@@ -36,10 +36,22 @@ def test_delete_file(unlink):
     r = FileOps.delete_file('test_dir', 'test_file')
     assert r == True
 
-
 @patch('direncrypt.fileops.os.unlink')
 def test_delete_file__os_error(unlink):
     """Error while deleting file."""
     unlink.side_effect = OSError('Boom!')
     r = FileOps.delete_file('test_dir', 'test_file')
+    assert r == False
+    
+@patch('direncrypt.fileops.os.symlink')
+def test_create_symlink(symlink):
+    """Symlink created successfully."""
+    r = FileOps.create_symlink('test_target', 'test_linkpath')
+    assert r == True
+    
+@patch('direncrypt.fileops.os.symlink')
+def test_create_symlink_exception(symlink):
+    """Exception while creating symlink."""
+    symlink.side_effect = Exception('Boom!')
+    r = FileOps.create_symlink('test_target', 'test_linkpath')
     assert r == False
