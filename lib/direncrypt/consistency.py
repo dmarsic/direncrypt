@@ -41,6 +41,7 @@ class ConsistencyCheck(object):
         self.database = database
         with Inventory(self.database) as inventory:
             self.parameters = inventory.read_parameters()
+            self.all_register = inventory.read_all_register()
             self.registered_files = inventory.read_registered_files()
             self.registered_links = inventory.read_registered_links()
             self.registered_dirs = inventory.read_registered_dirs()

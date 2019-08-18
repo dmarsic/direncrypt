@@ -164,9 +164,10 @@ class DirEncryption(object):
         for filename, record in registered_files.items():
             unenc_filename_path = os.path.join(self.plaindir, filename)
             enc_filename_path = os.path.join(self.securedir, record['encrypted_file'])
-            if os.path.isfile(enc_filename_path) and not os.path.isfile(unenc_filename_path):
-                printit("  --> Delete encrypted file {} and unregister", record['encrypted_file'])
-                FileOps.delete_file(self.securedir, record['encrypted_file'])
+            if not os.path.isfile(unenc_filename_path):
+                if os.path.isfile(enc_filename_path):
+                    printit("  --> Delete encrypted file {} and unregister", record['encrypted_file'])
+                    FileOps.delete_file(self.securedir, record['encrypted_file'])
                 inv.clean_record(filename)
                 
         # Clean symlinks
@@ -182,11 +183,12 @@ class DirEncryption(object):
             if not os.path.isdir(unenc_filename_path):
                 printit("  --> Unregister empty directory {}", filename)
                 inv.clean_record(filename)
-            # unregister if the directory has been filled
-            nb_contents = len(os.listdir(unenc_filename_path))
-            if nb_contents > 0:
-                printit("  --> Unregister  non empty directory {}", filename)
-                inv.clean_record(filename)
+            elif os.path.isdir(unenc_filename_path):
+                # unregister if the directory has been filled
+                nb_contents = len(os.listdir(unenc_filename_path))
+                if nb_contents > 0:
+                    printit("  --> Unregister  non empty directory {}", filename)
+                    inv.clean_record(filename)
         
     def decrypt_all(self, passphrase):
         """Decrypt all files from encrypted source.

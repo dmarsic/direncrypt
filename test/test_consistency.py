@@ -84,10 +84,10 @@ def test_check(exists, expanduser, Inventory):
     c = ConsistencyCheck('test_database')
     c.check()
 
-    ok_(c.fileset['unenc_1']['unencrypted_file_check'])
-    ok_(c.fileset['unenc_1']['encrypted_file_check'])
-    ok_(c.fileset['unenc_2']['unencrypted_file_check'])
-    ok_(c.fileset['unenc_2']['encrypted_file_check'])
+    ok_(c.registered_files['unenc_1']['unencrypted_file_check'])
+    ok_(c.registered_files['unenc_1']['encrypted_file_check'])
+    ok_(c.registered_files['unenc_2']['unencrypted_file_check'])
+    ok_(c.registered_files['unenc_2']['encrypted_file_check'])
 
 @patch('direncrypt.consistency.Inventory')
 def test_clean_registry(Inventory):
@@ -107,7 +107,7 @@ def test_loop_through(delete_file, DirEncryption, Inventory):
     between tests."""
     c = ConsistencyCheck('test_database')
     c.clean_registry = MagicMock()
-    c.fileset = {
+    c.registered_files = {
         'unenc_1': {
             'unencrypted_file'       : 'unenc_1',
             'encrypted_file'         : 'enc_1',
