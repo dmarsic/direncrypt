@@ -85,7 +85,7 @@ class Inventory:
         rows = {}
         request = """SELECT unencrypted_file, encrypted_file, public_id,
                      is_link, target FROM register WHERE is_link=0 and
-                     encrypted_file IS NOT NULL"""
+                     encrypted_file <>''"""
         for row in self.cursor.execute(request):
             rows[row[0]] = {
                 'unencrypted_file': row[0],
@@ -126,7 +126,7 @@ class Inventory:
         rows = {}
         request = """SELECT unencrypted_file, encrypted_file, public_id,
                      is_link, target FROM register WHERE is_link=0 and
-                     encrypted_file IS NULL"""
+                     encrypted_file=''"""
         for row in self.cursor.execute(request):
             rows[row[0]] = {
                 'unencrypted_file': row[0],
