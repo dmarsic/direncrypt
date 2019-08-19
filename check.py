@@ -55,7 +55,10 @@ if __name__ == "__main__":
             help='Effectively decrypt existing encrypted file to plaindir')
     group.add_argument('-d', '--delete',
             action='store_true',
-            help='Delete orphans encoded files (which are not in register')
+            help='Delete orphans encoded files (which are not in register)')
+    group.add_argument('-l', '--list',
+            action='store_true',
+            help='Displays number of records')
 
     args = parser.parse_args()
 
@@ -66,6 +69,8 @@ if __name__ == "__main__":
         c.loop_through(clean=True)
     elif args.delete:
         c.delete_orphans_encrypted_files()
+    elif args.list:
+        c.list_records()
     elif args.resync:
         passphrase = getpass.getpass('Passphrase: ')
         c.set_passphrase(passphrase)

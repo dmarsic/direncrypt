@@ -24,7 +24,7 @@ import os
 from direncrypt.inventory import Inventory
 from direncrypt.direncryption import DirEncryption
 from direncrypt.fileops import FileOps
-
+from direncrypt.util import printit
 
 class ConsistencyCheck(object):
     """Consistency checks between unencrypted and encrypted directories.
@@ -154,3 +154,18 @@ class ConsistencyCheck(object):
                 if not inv.exists_encrypted_file(enc_files[elt]):  
                     FileOps.delete_file(self.parameters['securedir'], enc_files[elt])
                 elt += 1
+    
+    def list_records(self):
+        "Displays number of records"
+        
+        with Inventory(self.database) as inv:
+            total_records = len(inv.read_all_register())
+            reg_files = len(inv.read_registered_files())
+            reg_links = len(inv.read_registered_links())
+            reg_dirs = len(inv.read_registered_dirs())
+            
+            printit("- Registered regular files :     {}", reg_files)
+            printit("- Registered symlinks :          {}", reg_links)
+            printit("- Registered empty directories : {}", reg_dirs)
+            printit("")
+            printit("Total number of records :        {}", total_records)
