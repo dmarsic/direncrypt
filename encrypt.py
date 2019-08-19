@@ -50,6 +50,7 @@ Sample usage:
       encrypt.py --encrypt \
                  --plaindir ~/DropboxLocal \
                  --securedir ~/Dropbox/Enc \
+                 --restoredir ~/DropboxRestore \
                  --public-id BADCOFFE \
                  --gpg-homedir ~/.gnupg \
                  --gpg-keyring pubring.kbx \
@@ -96,6 +97,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-p', '--plaindir',    help='Unencrypted directory')
     parser.add_argument('-s', '--securedir',   help='Encrypted directory')
+    parser.add_argument('-r', '--restoredir',  help='Restore directory')
     parser.add_argument('-i', '--public-id',   help='GPG public id')
     parser.add_argument('-P', '--passphrase',
             help='Passphrase to decrypt files.')

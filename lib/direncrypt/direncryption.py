@@ -69,6 +69,7 @@ class DirEncryption(object):
 
         self.plaindir    = os.path.expanduser(parameters['plaindir'])
         self.securedir   = os.path.expanduser(parameters['securedir'])
+        self.restoredir  = os.path.expanduser(parameters['restoredir'])
         self.public_id   = parameters['public_id']
         self.gpg_keyring = parameters['gpg_keyring']
         self.gpg_homedir = os.path.expanduser(parameters['gpg_homedir'])
@@ -81,6 +82,8 @@ class DirEncryption(object):
             self.plaindir    = os.path.expanduser(args.plaindir)
         if args.securedir:
             self.securedir   = os.path.expanduser(args.securedir)
+        if args.restoredir:
+            self.restoredir   = os.path.expanduser(args.restoredir)
         if args.public_id:
             self.public_id   = args.public_id
         if args.gpg_keyring:
@@ -212,19 +215,19 @@ class DirEncryption(object):
                         printit('Failed to create file {} : {}', record['unencrypted_file'], str(e))
                 # then restore empty directories
                 elif record['is_link'] == 0 and not record['encrypted_file'] and not record['public_id']:
-                    FileOps.create_directory(self.plaindir, record['unencrypted_file'])
+                    FileOps.create_directory(self.restoredir, record['unencrypted_file'])
                 # finally restore symlinks
                 elif record['is_link'] == 1:
-                    FileOps.create_symlink(self.plaindir, record['unencrypted_file'], record['target'])
+                    FileOps.create_symlink(self.restoredir, record['unencrypted_file'], record['target'])
 
 
     def decrypt(self, encfile, plainfile, phrase):
         """Decrypt the file using a supplied passphrase."""
         encrypted_path = os.path.join(self.securedir, encfile)
-        plain_path = os.path.join(self.plaindir, plainfile)
+        restored_path = os.path.join(self.restoredir, plainfile)
         if self.verbose:
-            printit('Decrypt: {} ---> {}', encrypted_path, plain_path)
-        self.gpg.decrypt(encrypted_path, plain_path, phrase)
+            printit('Decrypt: {} ---> {}', encrypted_path, restored_path)
+        self.gpg.decrypt(encrypted_path, restored_path, phrase)
 
     def find_unencrypted_files(self, register):
         """List all files that need to be encrypted.

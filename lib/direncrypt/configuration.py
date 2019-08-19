@@ -61,6 +61,13 @@ class CmdConfig(cmd.Cmd):
         Store directory location for encrypted files.
         Ex: /home/myself/Dropbox/Encrypted"""
         self.update('securedir', directory)
+        
+    def do_restoredir(self, directory):
+        """restoredir [directory]
+
+        Store directory location for restored files.
+        Ex: /home/myself/DropboxRestore"""
+        self.update('restoredir', directory)
 
     def do_public_id(self, id):
         """public_id [gpg_public_id]
