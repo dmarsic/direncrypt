@@ -28,13 +28,14 @@ sys.path.append(os.path.join(os.getcwd(), 'lib'))
 import os
 import nose
 from nose.tools import *
-from mock import MagicMock, patch
+from mock import Mock, MagicMock, patch
 from direncrypt.direncryption import DirEncryption
 
 saved_params = {
     'last_timestamp': 1234567890,
     'plaindir'      : 'param_plaindir',
     'securedir'     : 'param_securedir',
+    'restoredir'    : 'param_restoredir',
     'public_id'     : 'param_public_id',
     'gpg_keyring'   : 'param_gpg_keyring',
     'gpg_homedir'   : 'param_gpg_homedir',
@@ -45,11 +46,11 @@ test_args = MagicMock()
 test_args.verbose = None
 test_args.plaindir = None
 test_args.securedir = None
+test_args.restoredir = None
 test_args.public_id = None
 test_args.gpg_keyring = None
 test_args.gpg_homedir = None
 test_args.gpg_binary = None
-
 
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
@@ -62,7 +63,8 @@ def test_set_parameters__from_param(expanduser, Inventory, GPGOps):
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
-        saved_params['gpg_homedir'],
+        saved_params['public_id'],
+        saved_params['gpg_keyring'],
         saved_params['gpg_binary']
     ]
 
@@ -73,7 +75,6 @@ def test_set_parameters__from_param(expanduser, Inventory, GPGOps):
     eq_(de.securedir, saved_params['securedir'])
     eq_(de.public_id, saved_params['public_id'])
     eq_(de.gpg_keyring, saved_params['gpg_keyring'])
-    eq_(de.gpg_homedir, saved_params['gpg_homedir'])
     eq_(de.gpg_binary, saved_params['gpg_binary'])
 
 
@@ -88,18 +89,21 @@ def test_set_parameters__from_args(expanduser, Inventory, GPGOps):
     args.verbose = True
     args.plaindir = 'runtime_plaindir'
     args.securedir = 'runtime_securedir'
+    args.restoredir = 'runtime_restoredir'
     args.public_id = 'runtime_public_id'
     args.gpg_keyring = 'runtime_gpg_keyring'
     args.gpg_homedir = 'runtime_gpg_homedir'
     args.gpg_binary = 'runtime_gpg_binary'
-
+    
     expanduser.side_effect = [
         args.plaindir,
         args.securedir,
+        args.restoredir,
         args.gpg_homedir,
         args.gpg_binary,
         args.plaindir,
         args.securedir,
+        args.restoredir,
         args.gpg_homedir,
         args.gpg_binary
     ]
@@ -109,9 +113,9 @@ def test_set_parameters__from_args(expanduser, Inventory, GPGOps):
     eq_(de.last_timestamp, saved_params['last_timestamp'])
     eq_(de.plaindir, args.plaindir)
     eq_(de.securedir, args.securedir)
+    eq_(de.restoredir, args.restoredir)
     eq_(de.public_id, args.public_id)
     eq_(de.gpg_keyring, args.gpg_keyring)
-    eq_(de.gpg_homedir, args.gpg_homedir)
     eq_(de.gpg_binary, args.gpg_binary)
 
 
@@ -122,6 +126,7 @@ def test_encrypt(expanduser, GPGOps):
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -146,6 +151,7 @@ def test_encrypt_all__no_files(encrypt, find, expanduser, Inventory, GPGOps):
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -175,6 +181,7 @@ def test_encrypt_all(find_udirs, register, find_ulinks, delete_file, encrypt,
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -223,16 +230,17 @@ def test_decrypt(expanduser, Inventory, GPGOps):
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
 
     de = DirEncryption(test_args)
-    de.decrypt('test_enc_file', 'test_plain_file', 'trustno1')
+    de.decrypt('test_enc_file', 'test_restore_file', 'trustno1')
 
     de.gpg.decrypt.assert_called_once_with(
         os.path.join(saved_params['securedir'], 'test_enc_file'),
-        os.path.join(saved_params['plaindir'], 'test_plain_file'),
+        os.path.join(saved_params['restoredir'], 'test_restore_file'),
         'trustno1'
     )
 
@@ -249,6 +257,7 @@ def test_decrypt_all__no_files(decrypt, expanduser,
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -273,6 +282,7 @@ def test_decrypt_all(create_symlink, decrypt, expanduser, Inventory, GPGOps):
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['public_id'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
@@ -330,13 +340,14 @@ def test_decrypt_all(create_symlink, decrypt, expanduser, Inventory, GPGOps):
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.os.walk')
-def test_find_unencrypted_files_empty_dir(walk, expanduser, Inventory, GPGOps):
+def test_find_unencrypted_files__empty_dir(walk, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -372,6 +383,7 @@ def test_find_unencrypted_files(islink, stat, walk, expanduser, Inventory, GPGOp
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -423,6 +435,7 @@ def test_find_unregistered_links(readlink, islink, stat, walk, expanduser, Inven
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -473,6 +486,7 @@ def test_find_unregistered_empty_dirs( stat, walk, expanduser, Inventory, GPGOps
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
@@ -517,6 +531,7 @@ def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
     expanduser.side_effect = [
         saved_params['plaindir'],
         saved_params['securedir'],
+        saved_params['restoredir'],
         saved_params['gpg_homedir'],
         saved_params['gpg_binary']
     ]
