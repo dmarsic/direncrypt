@@ -105,13 +105,13 @@ class Inventory:
             result[plainfile] = {'encrypted_file':   row[0]}
         return result[plainfile]['encrypted_file']
 
-    def register(self, plain_path, enc_path, public_id, is_link, target):
+    def register(self, plain_path, enc_path, public_id, is_link, link_target):
         """Register input and output filenames into a database."""
         is_link_int = int(is_link)
         self.cursor.execute('''INSERT OR REPLACE INTO register
             (unencrypted_file, encrypted_file, public_id, is_link, target)
             VALUES (?,?,?,?,?)''',
-            (plain_path, enc_path, public_id, is_link_int, target))
+            (plain_path, enc_path, public_id, is_link_int, link_target))
 
     def update_last_timestamp(self):
         """Update last timestamp in the database."""

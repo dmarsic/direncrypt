@@ -146,9 +146,9 @@ class DirEncryption(object):
         self.gpg.encrypt(plain_path, encrypted_path)
         inventory.register(plainfile, encfile, self.public_id, is_link, '')
         
-    def register(self, plainfile, inventory, is_link, target=None):
+    def register(self, plainfile, inventory, is_link, link_target=None):
         """Register symlinks and empty directories."""
-        inventory.register(plainfile, '', '', is_link, target)
+        inventory.register(plainfile, '', '', is_link, link_target)
 
     def clean(self, inv):
         """Clean register and file system
