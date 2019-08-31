@@ -24,8 +24,8 @@ class FileOps(object):
         """
         try:
             os.symlink(target, os.path.expanduser(os.path.join(root_dir, link_name)))
-        except Exception as e:
-            printit('Failed to create symlink {} : {}', link_name, str(e))
+        except OSError as ose:
+            printit('Failed to create symlink {} : {}', link_name, str(ose))
             return False
         return True
     

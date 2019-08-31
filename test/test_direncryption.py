@@ -133,7 +133,7 @@ def test_encrypt(expanduser, GPGOps):
     inventory = MagicMock()
 
     de = DirEncryption(test_args)
-    de.encrypt('plainfile', 'securefile', inventory, 0)
+    de.encrypt('plainfile', 'securefile', inventory)
     eq_(inventory.register.call_count, 1)
     de.gpg.encrypt.assert_called_once_with(
         os.path.join(saved_params['plaindir'], 'plainfile'),
@@ -393,7 +393,7 @@ def test_find_unencrypted_files(islink, stat, walk, expanduser, Inventory, GPGOp
             'unencrypted_file': 'unenc_1',
             'encrypted_file': 'uuid-1',
             'public_id': saved_params['public_id'],
-            'is_link':0,
+            'is_link': 0,
             'target': ''
         }
     }
@@ -496,7 +496,7 @@ def test_find_unregistered_empty_dirs( stat, walk, expanduser, Inventory, GPGOps
             'unencrypted_file': 'subdir_1',
             'encrypted_file': '',
             'public_id': '',
-            'is_link':0,
+            'is_link': 0,
             'target': ''
         }
     }

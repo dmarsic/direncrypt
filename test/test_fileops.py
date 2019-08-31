@@ -50,9 +50,9 @@ def test_create_symlink(symlink):
     assert r == True
     
 @patch('direncrypt.fileops.os.symlink')
-def test_create_symlink_exception(symlink):
+def test_create_symlink_os_error(symlink):
     """Exception while creating symlink."""
-    symlink.side_effect = Exception('Boom!')
+    symlink.side_effect = OSError('Boom!')
     r = FileOps.create_symlink('test_dir', 'test_name', 'test_target')
     assert r == False
 

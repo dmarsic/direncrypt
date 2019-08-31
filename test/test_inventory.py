@@ -165,4 +165,3 @@ def test_exists_encrypted_file(connect):
 
         assert inv.cursor.execute.call_count==1
         assert inv.cursor.execute.call_args[0][1]==('filename',)
-        assert r==True or r==False

@@ -56,8 +56,10 @@ class Inventory:
         return params
     
     def read_register(self, filter: str = "all"):
-        """Get information on all registered regular files and symlinks.
+        """Get information on all registered regular files, symlinks and empty directories.
 
+        "filter" can take the following values : "all", "files", "links" or "dirs".
+        This parameter is used to modify the SQL query and filter the results.
         Returns a dict with unencrypted filename for keys, having
         a dict of unencrypted file, encrypted file, public id,
         is_link and target as value.
@@ -105,7 +107,7 @@ class Inventory:
 
     def register(self, plain_path, enc_path, public_id, is_link, target):
         """Register input and output filenames into a database."""
-        is_link_int = 0 if is_link==False else 1
+        is_link_int = int(is_link)
         self.cursor.execute('''INSERT OR REPLACE INTO register
             (unencrypted_file, encrypted_file, public_id, is_link, target)
             VALUES (?,?,?,?,?)''',
@@ -127,13 +129,11 @@ class Inventory:
         self.cursor.execute(request, (filename,))
         
     def exists_encrypted_file(self, filename):
-        """tests if an encoded filename exists in register.
+        """Tests if an encoded filename exists in register.
         
         Returns True if 'filename' is found, False otherwise.
         """
         request = "SELECT encrypted_file FROM register WHERE encrypted_file = ?"
         self.cursor.execute(request, (filename,))
         enc_filenames = self.cursor.fetchall()
-        nb = len(enc_filenames)
-        result = True if nb==1 else False
-        return result
+        return bool(enc_filenames)

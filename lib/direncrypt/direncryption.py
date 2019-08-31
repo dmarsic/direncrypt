@@ -114,7 +114,7 @@ class DirEncryption(object):
                     encfile = inv.read_line_from_register(plainfile)
                     FileOps.delete_file(self.securedir, encfile)
                 encryptedfile = self.generate_name()
-                self.encrypt(plainfile, encryptedfile, inv, False)
+                self.encrypt(plainfile, encryptedfile, inv)
                 if self.verbose:
                     printit('Encrypted file: {} ---> {}', plainfile, encryptedfile)
             # then treat empty directories
@@ -139,7 +139,7 @@ class DirEncryption(object):
             inv.update_last_timestamp()
             printit("Done !")
                 
-    def encrypt(self, plainfile, encfile, inventory, is_link):
+    def encrypt(self, plainfile, encfile, inventory, is_link=False):
         """Encrypt the file and register input and output filenames."""
         plain_path = os.path.join(self.plaindir, plainfile)
         encrypted_path = os.path.join(self.securedir, encfile)
