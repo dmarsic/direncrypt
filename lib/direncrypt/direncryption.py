@@ -105,7 +105,7 @@ class DirEncryption(object):
         register = {}
         printit("Encrypting all directory '{}', please wait...", self.plaindir)
         with Inventory(self.database) as inv:
-            register = inv.read_all_register()
+            register = inv.read_register("all")
             # treat regular files first
             files = self.find_unencrypted_files(register)
             for plainfile, val in files.items():
@@ -159,9 +159,9 @@ class DirEncryption(object):
         """
         
         printit("Clean register and file system...")
-        registered_files = inv.read_registered_files()
-        registered_links = inv.read_registered_links()
-        registered_dirs = inv.read_registered_dirs()
+        registered_files = inv.read_register("files")
+        registered_links = inv.read_register("links")
+        registered_dirs = inv.read_register("dirs")
         
         # Clean regular files
         for filename, record in registered_files.items():
@@ -202,7 +202,7 @@ class DirEncryption(object):
         """
         register = {}
         with Inventory(self.database) as i:
-            register = i.read_all_register()
+            register = i.read_register("all")
             for filename, record in register.items():
                 # first decrypt regular files
                 if record['is_link'] == 0 and record['encrypted_file'] and record['public_id']:

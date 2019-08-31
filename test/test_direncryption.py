@@ -288,7 +288,7 @@ def test_decrypt_all(create_symlink, decrypt, expanduser, Inventory, GPGOps):
         saved_params['gpg_binary']
     ]
 
-    Inventory().__enter__().read_all_register.return_value = {
+    Inventory().__enter__().read_register.return_value = {
         'unenc_1': {
             'unencrypted_file': 'unenc_1',
             'encrypted_file': 'uuid-1',
@@ -521,10 +521,8 @@ def test_find_unregistered_empty_dirs( stat, walk, expanduser, Inventory, GPGOps
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.os.path.isfile')
-@patch('direncrypt.direncryption.os.path.islink')
-@patch('direncrypt.direncryption.os.path.isdir')
 @patch('direncrypt.direncryption.os.listdir')
-def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
+def test_clean_files(listdir, isfile, expanduser, Inventory, GPGOps):
 
     Inventory().__enter__().read_parameters.return_value = saved_params
 
@@ -537,8 +535,8 @@ def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
     ]
 
     isfile.return_value = False
-    inv_1 = MagicMock()
-    inv_1.read_registered_files.return_value = {
+    inv = MagicMock()
+    inv.read_register.return_value = {
         'unenc_1': {
             'unencrypted_file': 'unenc_1',
             'encrypted_file': 'uuid-1',
@@ -555,14 +553,28 @@ def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
         }
     }
     de = DirEncryption(test_args)
-    de.clean(inv_1)
-    eq_(inv_1.clean_record.call_count, 2)
-
-    inv_1.reset_mock()
-    isfile.reset_mock()
+    de.clean(inv)
+    eq_(inv.clean_record.call_count, 6)
     
-    inv_2 = MagicMock()
-    inv_2.read_registered_links.return_value = {
+@patch('direncrypt.direncryption.GPGOps')
+@patch('direncrypt.direncryption.Inventory')
+@patch('direncrypt.direncryption.os.path.expanduser')
+@patch('direncrypt.direncryption.os.path.islink')
+@patch('direncrypt.direncryption.os.listdir')
+def test_clean_links(listdir, islink, expanduser, Inventory, GPGOps):
+
+    Inventory().__enter__().read_parameters.return_value = saved_params
+
+    expanduser.side_effect = [
+        saved_params['plaindir'],
+        saved_params['securedir'],
+        saved_params['restoredir'],
+        saved_params['gpg_homedir'],
+        saved_params['gpg_binary']
+    ]
+
+    inv = MagicMock()
+    inv.read_register.return_value = {
         'unenc_3': {
             'unencrypted_file': 'unenc_3',
             'encrypted_file': '',
@@ -579,14 +591,29 @@ def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
         }
     }
     islink.return_value = False
-    de.clean(inv_2)
-    eq_(inv_2.clean_record.call_count, 2)
+    de = DirEncryption(test_args)
+    de.clean(inv)
+    eq_(inv.clean_record.call_count, 6)
     
-    inv_2.reset_mock()
-    islink.reset_mock()
-    
-    inv_3 = MagicMock()
-    inv_3.read_registered_dirs.return_value = {
+@patch('direncrypt.direncryption.GPGOps')
+@patch('direncrypt.direncryption.Inventory')
+@patch('direncrypt.direncryption.os.path.expanduser')
+@patch('direncrypt.direncryption.os.path.isdir')
+@patch('direncrypt.direncryption.os.listdir')
+def test_clean_dirs(listdir, isdir, expanduser, Inventory, GPGOps):
+
+    Inventory().__enter__().read_parameters.return_value = saved_params
+
+    expanduser.side_effect = [
+        saved_params['plaindir'],
+        saved_params['securedir'],
+        saved_params['restoredir'],
+        saved_params['gpg_homedir'],
+        saved_params['gpg_binary']
+    ]
+
+    inv = MagicMock()
+    inv.read_register.return_value = {
         'unenc_5': {
             'unencrypted_file': 'unenc_5',
             'encrypted_file': '',
@@ -603,14 +630,14 @@ def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
         }
     }
     isdir.return_value = False
-    de.clean(inv_3)
-    eq_(inv_3.clean_record.call_count, 2)
+    de = DirEncryption(test_args)
+    de.clean(inv)
+    eq_(inv.clean_record.call_count, 6)
     
-    inv_3.reset_mock()
+    inv.reset_mock()
     isdir.reset_mock()
     
-    inv_4 = MagicMock()
-    inv_4.read_registered_dirs.return_value = {
+    inv.read_register.return_value = {
         'unenc_7': {
             'unencrypted_file': 'unenc_7',
             'encrypted_file': '',
@@ -621,6 +648,5 @@ def test_clean(listdir, isdir, islink, isfile, expanduser, Inventory, GPGOps):
     }
     isdir.return_value = True
     listdir.return_value = ['some_file']
-    de.clean(inv_4)
-    eq_(inv_4.clean_record.call_count, 1)
-    
+    de.clean(inv)
+    eq_(inv.clean_record.call_count, 3)

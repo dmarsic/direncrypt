@@ -67,7 +67,7 @@ def test_read_all_register(connect):
     ]
 
     with Inventory('test_database') as inv:
-        rows = inv.read_all_register()
+        rows = inv.read_register("all")
 
     eq_(len(rows), 4)
     for f in ['unenc_1', 'unenc_2', 'unenc_3', 'unenc_4']:
@@ -87,7 +87,7 @@ def test_read_registered_files(connect):
     ]
 
     with Inventory('test_database') as inv:
-        rows = inv.read_registered_files()
+        rows = inv.read_register('files')
 
     eq_(len(rows), 2)
     for f in ['unenc_1', 'unenc_2']:
@@ -107,7 +107,7 @@ def test_read_registered_links(connect):
     ]
 
     with Inventory('test_database') as inv:
-        rows = inv.read_registered_links()
+        rows = inv.read_register("links")
 
     eq_(len(rows), 2)
     for f in ['unenc_1', 'unenc_2']:
@@ -127,7 +127,7 @@ def test_read_registered_dirs(connect):
     ]
 
     with Inventory('test_database') as inv:
-        rows = inv.read_registered_links()
+        rows = inv.read_register("dirs")
 
     eq_(len(rows), 2)
     for f in ['unenc_1', 'unenc_2']:

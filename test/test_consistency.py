@@ -86,7 +86,7 @@ def test_check(exists, expanduser, Inventory):
 
     ok_(c.registered_files['unenc_1']['unencrypted_file_check'])
     ok_(c.registered_files['unenc_1']['encrypted_file_check'])
-    ok_(c.registered_files['unenc_2']['unencrypted_file_check'])
+    assert c.registered_files['unenc_2']['unencrypted_file_check']==False
     ok_(c.registered_files['unenc_2']['encrypted_file_check'])
 
 @patch('direncrypt.consistency.Inventory')

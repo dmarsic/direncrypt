@@ -54,79 +54,37 @@ class Inventory:
             for row in self.cursor.execute('SELECT key, value FROM state'):
                 params[row[0]] = row[1]
         return params
-
-    def read_all_register(self):
+    
+    def read_register(self, filter: str = "all"):
         """Get information on all registered regular files and symlinks.
 
         Returns a dict with unencrypted filename for keys, having
         a dict of unencrypted file, encrypted file, public id,
         is_link and target as value.
         """
-        rows = {}
-        request = """SELECT unencrypted_file, encrypted_file, public_id,
-                     is_link, target FROM register"""
-        for row in self.cursor.execute(request):
-            rows[row[0]] = {
-                'unencrypted_file': row[0],
-                'encrypted_file':   row[1],
-                'public_id':        row[2],
-                'is_link':          row[3],
-                'target':           row[4]
-            }
-        return rows
-    
-    def read_registered_files(self):
-        """Get information on all registered regular files.
-
-        Returns a dict with unencrypted filename for keys, having
-        a dict of unencrypted file, encrypted file, public id,
-        is_link and target as value.
-        """
-        rows = {}
-        request = """SELECT unencrypted_file, encrypted_file, public_id,
-                     is_link, target FROM register WHERE is_link=0 and
-                     encrypted_file <>''"""
-        for row in self.cursor.execute(request):
-            rows[row[0]] = {
-                'unencrypted_file': row[0],
-                'encrypted_file':   row[1],
-                'public_id':        row[2],
-                'is_link':          row[3],
-                'target':           row[4]
-            }
-        return rows
-    
-    def read_registered_links(self):
-        """Get information on all registered links.
+        request_all =   """
+                        SELECT unencrypted_file, encrypted_file, public_id,
+                        is_link, target FROM register
+                        """
+        request_files = """
+                        SELECT unencrypted_file, encrypted_file, public_id,
+                        is_link, target FROM register WHERE is_link=0 and
+                        encrypted_file <>''
+                        """
+        request_links = """
+                        SELECT unencrypted_file, encrypted_file, public_id, 
+                        is_link, target FROM register WHERE is_link=1
+                        """
+        request_dirs =  """
+                        SELECT unencrypted_file, encrypted_file, public_id,
+                        is_link, target FROM register WHERE is_link=0 and
+                        encrypted_file=''
+                        """
+                         
+        switcher = { "all": request_all, "files": request_files, "links": request_links, "dirs": request_dirs }
+        request = switcher.get(filter)
         
-        Returns a dict with unencrypted filename for keys, having
-        a dict of unencrypted file, encrypted file, public id,
-        is_link and target as value.
-        """
         rows = {}
-        request = """SELECT unencrypted_file, encrypted_file, public_id, 
-                     is_link, target FROM register WHERE is_link=1"""
-        for row in self.cursor.execute(request):
-            rows[row[0]] = {
-                'unencrypted_file': row[0],
-                'encrypted_file':   row[1],
-                'public_id':        row[2],
-                'is_link':          row[3],
-                'target':           row[4]
-            }
-        return rows
-    
-    def read_registered_dirs(self):
-        """Get information on all registered empty directories.
-        
-        Returns a dict with unencrypted filename for keys, having
-        a dict of unencrypted file, encrypted file, public id,
-        is_link and target as value.
-        """
-        rows = {}
-        request = """SELECT unencrypted_file, encrypted_file, public_id,
-                     is_link, target FROM register WHERE is_link=0 and
-                     encrypted_file=''"""
         for row in self.cursor.execute(request):
             rows[row[0]] = {
                 'unencrypted_file': row[0],

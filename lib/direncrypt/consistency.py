@@ -41,10 +41,10 @@ class ConsistencyCheck(object):
         self.database = database
         with Inventory(self.database) as inventory:
             self.parameters = inventory.read_parameters()
-            self.all_register = inventory.read_all_register()
-            self.registered_files = inventory.read_registered_files()
-            self.registered_links = inventory.read_registered_links()
-            self.registered_dirs = inventory.read_registered_dirs()
+            self.all_register = inventory.read_register("all")
+            self.registered_files = inventory.read_register("files")
+            self.registered_links = inventory.read_register("links")
+            self.registered_dirs = inventory.read_register("dirs")
 
     def set_passphrase(self, passphrase):
         """Set passphrase to be used for decrypting."""
@@ -159,10 +159,10 @@ class ConsistencyCheck(object):
         "Displays number of records"
         
         with Inventory(self.database) as inv:
-            total_records = len(inv.read_all_register())
-            reg_files = len(inv.read_registered_files())
-            reg_links = len(inv.read_registered_links())
-            reg_dirs = len(inv.read_registered_dirs())
+            total_records = len(inv.read_register("all"))
+            reg_files = len(inv.read_register("files"))
+            reg_links = len(inv.read_register("links"))
+            reg_dirs = len(inv.read_register("dirs"))
             
             printit("- Registered regular files :     {}", reg_files)
             printit("- Registered symlinks :          {}", reg_links)
