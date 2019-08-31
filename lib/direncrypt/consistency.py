@@ -34,17 +34,13 @@ class ConsistencyCheck(object):
     """
 
     def __init__(self, database):
-        """Load registered file list and program parameters.
+        """Load program parameters.
 
         Program parameters are needed for file locations.
         """
         self.database = database
         with Inventory(self.database) as inventory:
             self.parameters = inventory.read_parameters()
-            self.all_register = inventory.read_register("all")
-            self.registered_files = inventory.read_register("files")
-            self.registered_links = inventory.read_register("links")
-            self.registered_dirs = inventory.read_register("dirs")
 
     def set_passphrase(self, passphrase):
         """Set passphrase to be used for decrypting."""
@@ -60,6 +56,10 @@ class ConsistencyCheck(object):
         This method does not report or do anything else, so another
         method may be required to show the result of the check.
         """
+        # Load registered file list.
+        with Inventory(self.database) as inventory:
+            self.registered_files = inventory.read_register("files")
+            
         for filename in self.registered_files:
 
             unenc_full_path = os.path.expanduser(os.path.join(
@@ -140,7 +140,7 @@ class ConsistencyCheck(object):
     def delete_orphans_encrypted_files(self):
         """ Delete orphans encoded files (which are not in register). 
         
-        normally this should not happen, but it can happen anyway 
+        Normally this should not happen, but it can happen anyway 
         after a crash during encryption or by modifying register
         manually.
         """
