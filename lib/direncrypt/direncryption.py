@@ -206,8 +206,7 @@ class DirEncryption(object):
                 inv.clean_record(filename)
             elif os.path.isdir(unenc_filename_path):
                 # unregister if the directory has been filled
-                nb_contents = len(os.listdir(unenc_filename_path))
-                if nb_contents > 0:
+                if os.listdir(unenc_filename_path):
                     printit("  --> Unregister  non empty directory {}", filename)
                     inv.clean_record(filename)
         
@@ -343,27 +342,28 @@ class DirEncryption(object):
             printit('Walking: {}', self.plaindir)
         empty_dirs = list()
         for (dirpath, dirnames, filenames) in os.walk(self.plaindir):
-            if len(dirnames)==0 and len(filenames)==0:
+            if not dirnames and not filenames:
                 empty_dirs.append(dirpath)
-        if len(empty_dirs)!=0:
-            for dir in empty_dirs:
-                statinfo = os.stat(dir)
-                mtime = statinfo.st_mtime
-                relative_path = dir[(len(self.plaindir) + 1):]
-                if relative_path not in register:
-                    # new dir
-                    enc_flag = '*'
-                    result[relative_path] = {'is_new': True}
-                elif relative_path in register and mtime > int(self.last_timestamp):
-                    # dir exists and has changed since last run
-                    enc_flag = '*'
-                    result[relative_path] = {'is_new': False}
-                else:
-                    # dir has not changed since last run
-                    enc_flag = ' '
-                if self.verbose:
-                    printit('List empty directories: {} {} ({}): {}',
-                        enc_flag, int(mtime), self.last_timestamp,
+        if not empty_dirs:
+            return result
+        for dir in empty_dirs:
+            statinfo = os.stat(dir)
+            mtime = statinfo.st_mtime
+            relative_path = dir[(len(self.plaindir) + 1):]
+            if relative_path not in register:
+                # new dir
+                enc_flag = '*'
+                result[relative_path] = {'is_new': True}
+            elif relative_path in register and mtime > int(self.last_timestamp):
+                # dir exists and has changed since last run
+                enc_flag = '*'
+                result[relative_path] = {'is_new': False}
+            else:
+                # dir has not changed since last run
+                enc_flag = ' '
+            if self.verbose:
+                printit('List empty directories: {} {} ({}): {}',
+                    enc_flag, int(mtime), self.last_timestamp,
                         relative_path)
         return result
          

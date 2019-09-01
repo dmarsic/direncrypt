@@ -149,11 +149,9 @@ class ConsistencyCheck(object):
             for (dirpath, dirnames, filenames) in os.walk(self.parameters['securedir']):
                 for name in filenames:
                     enc_files.append(name)
-            elt = 0
-            while elt < len(enc_files):
-                if not inv.exists_encrypted_file(enc_files[elt]):  
-                    FileOps.delete_file(self.parameters['securedir'], enc_files[elt])
-                elt += 1
+            for enc_file in enc_files:
+                if not inv.exists_encrypted_file(enc_file):  
+                    FileOps.delete_file(self.parameters['securedir'], enc_file)
     
     def list_records(self):
         "Displays number of records"
