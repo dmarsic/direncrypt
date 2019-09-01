@@ -106,39 +106,57 @@ class DirEncryption(object):
         printit("Encrypting all directory '{}', please wait...", self.plaindir)
         with Inventory(self.database) as inv:
             register = inv.read_register("all")
+            
             # treat regular files first
-            files = self.find_unencrypted_files(register)
-            for plainfile, val in files.items():
-                if not val['is_new']:
-                    # remove old file in secure directory
-                    encfile = inv.read_line_from_register(plainfile)
-                    FileOps.delete_file(self.securedir, encfile)
-                encryptedfile = self.generate_name()
-                self.encrypt(plainfile, encryptedfile, inv)
-                if self.verbose:
-                    printit('Encrypted file: {} ---> {}', plainfile, encryptedfile)
+            self.encrypt_regular_files(register, inv)
             # then treat empty directories
-            dirs = self.find_unregistered_empty_dirs(register)
-            for dir_name, val in dirs.items():
-                if not val['is_new']:
-                    # remove old dir in register
-                    inv.clean_record(dir_name)
-                self.register(dir_name, inv, False)
-                if self.verbose:
-                    printit('Registered empty directory: {}', dir_name)
+            self.register_empty_dirs(register, inv)
             # finally treat symlinks
-            links = self.find_unregistered_links(register)
-            for link_name, val in links.items():
-                if not val['is_new']:
-                    # remove old link in register
-                    inv.clean_record(link_name)
-                self.register(link_name, inv, True, val['target'])
-                if self.verbose:
-                    printit('Registered symlink: {} ---> {}', link_name, val['target'])
-            self.clean(inv)
-            inv.update_last_timestamp()
+            self.register_symlinks(register, inv)
+            
+            self.do_inv_maintenance(inv)
             printit("Done !")
+    
+    def encrypt_regular_files(self, register, inventory):
+        """Encrypt all regular files"""
+        files = self.find_unencrypted_files(register)
+        for plainfile, val in files.items():
+            if not val['is_new']:
+                # remove old file in secure directory
+                encfile = inventory.read_line_from_register(plainfile)
+                FileOps.delete_file(self.securedir, encfile)
+            encryptedfile = self.generate_name()
+            self.encrypt(plainfile, encryptedfile, inventory)
+            if self.verbose:
+                printit('Encrypted file: {} ---> {}', plainfile, encryptedfile)
                 
+    def register_empty_dirs(self, register, inventory):
+        """Register all empty directories"""
+        dirs = self.find_unregistered_empty_dirs(register)
+        for dir_name, val in dirs.items():
+            if not val['is_new']:
+                # remove old dir in register
+                inventory.clean_record(dir_name)
+            self.register(dir_name, inventory, False)
+            if self.verbose:
+                printit('Registered empty directory: {}', dir_name)
+                
+    def register_symlinks(self, register, inventory):
+        """Register all symlinks"""
+        links = self.find_unregistered_links(register)
+        for link_name, val in links.items():
+            if not val['is_new']:
+                # remove old link in register
+                inventory.clean_record(link_name)
+            self.register(link_name, inventory, True, val['target'])
+            if self.verbose:
+                printit('Registered symlink: {} ---> {}', link_name, val['target'])
+    
+    def do_inv_maintenance(self, inventory):
+        """Clean register and update timestamp"""
+        self.clean(inventory)
+        inventory.update_last_timestamp()
+        
     def encrypt(self, plainfile, encfile, inventory, is_link=False):
         """Encrypt the file and register input and output filenames."""
         plain_path = os.path.join(self.plaindir, plainfile)

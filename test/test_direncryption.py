@@ -163,61 +163,92 @@ def test_encrypt_all__no_files(encrypt, find, expanduser, Inventory, GPGOps):
     eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
 
 
+@patch('direncrypt.direncryption.DirEncryption.encrypt_regular_files')
+@patch('direncrypt.direncryption.DirEncryption.register_empty_dirs')
+@patch('direncrypt.direncryption.DirEncryption.register_symlinks')
+@patch('direncrypt.direncryption.DirEncryption.do_inv_maintenance')
+def test_encrypt_all(maintenance, register_links, register_dirs, encrypt_files):
+
+    de = DirEncryption(test_args)
+    de.encrypt_all()
+
+    eq_(maintenance.call_count, 1)
+    eq_(register_links.call_count, 1)
+    eq_(register_dirs.call_count, 1)
+    eq_(encrypt_files.call_count, 1)
+
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
-@patch('direncrypt.direncryption.os.path.expanduser')
 @patch('direncrypt.direncryption.DirEncryption.find_unencrypted_files')
 @patch('direncrypt.direncryption.DirEncryption.encrypt')
 @patch('direncrypt.direncryption.FileOps.delete_file')
-@patch('direncrypt.direncryption.DirEncryption.find_unregistered_links')
-@patch('direncrypt.direncryption.DirEncryption.register')
-@patch('direncrypt.direncryption.DirEncryption.find_unregistered_empty_dirs')
-def test_encrypt_all(find_udirs, register, find_ulinks, delete_file, encrypt, 
-                     find_ufiles, expanduser, Inventory, GPGOps):
-
-    Inventory().__enter__().read_parameters.return_value = saved_params
-
-
-    expanduser.side_effect = [
-        saved_params['plaindir'],
-        saved_params['securedir'],
-        saved_params['restoredir'],
-        saved_params['gpg_homedir'],
-        saved_params['gpg_binary']
-    ]
+def test_encrypt_regular_files(delete_file, encrypt, find_ufiles, Inventory, GPGOps):
 
     find_ufiles.return_value = {
         'test_path_1': {'is_new': False},
         'test_path_2': {'is_new': False},
         'test_path_3': {'is_new': True}
     }
+
+    de = DirEncryption(test_args)
+    de.encrypt_regular_files(Inventory().__enter__().read_register("all"), Inventory().__enter__())
+
+    eq_(encrypt.call_count, 3)
+    eq_(delete_file.call_count, 2)
+    eq_(find_ufiles.call_count, 1)
+    eq_(encrypt.call_args_list[0][0][0], 'test_path_1')
+    eq_(encrypt.call_args_list[1][0][0], 'test_path_2')
+    eq_(encrypt.call_args_list[2][0][0], 'test_path_3')
     
-    find_ulinks.return_value = {
-        'test_link_1': {'target': 'target_1', 'is_new': False},
-        'test_link_2': {'target': 'target_2', 'is_new': True}
-    }
-    
+
+@patch('direncrypt.direncryption.GPGOps')
+@patch('direncrypt.direncryption.Inventory')
+@patch('direncrypt.direncryption.DirEncryption.register')
+@patch('direncrypt.direncryption.DirEncryption.find_unregistered_empty_dirs')
+def test_register_empty_dirs(find_udirs, register, Inventory, GPGOps):
+
+    Inventory().__enter__().read_parameters.return_value = saved_params
+
     find_udirs.return_value = {
         'test_dir_1': {'is_new': False},
         'test_dir_2': {'is_new': True}
     }
 
     de = DirEncryption(test_args)
-    de.encrypt_all()
+    de.register_empty_dirs(Inventory().__enter__().read_register("dirs"), Inventory().__enter__())
 
-    eq_(encrypt.call_count, 3)
-    eq_(register.call_count, 4)
-    eq_(delete_file.call_count, 2)
-    eq_(find_ufiles.call_count, 1)
-    eq_(find_ulinks.call_count, 1)
+    eq_(register.call_count, 2)
     eq_(find_udirs.call_count, 1)
-    eq_(encrypt.call_args_list[0][0][0], 'test_path_1')
-    eq_(encrypt.call_args_list[1][0][0], 'test_path_2')
-    eq_(encrypt.call_args_list[2][0][0], 'test_path_3')
-    eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
-    eq_(Inventory().__enter__().clean_record.call_count, 2)
-    eq_(Inventory().__enter__().clean_record.call_args_list[0][0][0], 'test_dir_1')
+    eq_(Inventory().__enter__().clean_record.call_count, 1)
 
+@patch('direncrypt.direncryption.GPGOps')
+@patch('direncrypt.direncryption.Inventory')
+@patch('direncrypt.direncryption.DirEncryption.find_unregistered_links')
+@patch('direncrypt.direncryption.DirEncryption.register')
+def test_register_symlinks(register, find_ulinks, Inventory, GPGOps):
+
+    find_ulinks.return_value = {
+        'test_link_1': {'target': 'target_1', 'is_new': False},
+        'test_link_2': {'target': 'target_2', 'is_new': True}
+    }
+
+    de = DirEncryption(test_args)
+    de.register_symlinks(Inventory().__enter__().read_register("links"), Inventory().__enter__())
+
+    eq_(register.call_count, 2)
+    eq_(find_ulinks.call_count, 1)
+    eq_(Inventory().__enter__().clean_record.call_count, 1)
+
+@patch('direncrypt.direncryption.GPGOps')
+@patch('direncrypt.direncryption.Inventory')
+@patch('direncrypt.direncryption.DirEncryption.clean')
+def test_do_inv_maintenance(clean, Inventory, GPGOps):
+
+    de = DirEncryption(test_args)
+    de.do_inv_maintenance(Inventory().__enter__())
+
+    eq_(clean.call_count, 1)
+    eq_(Inventory().__enter__().update_last_timestamp.call_count, 1)
 
 
 @patch('direncrypt.direncryption.GPGOps')
