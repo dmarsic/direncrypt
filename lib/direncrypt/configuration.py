@@ -44,7 +44,7 @@ class CmdConfig(cmd.Cmd):
         print('-' * 40)
         with Inventory(self.database) as i:
             params = i.read_parameters(params_only=True)
-            for key, value in i.read_parameters(params_only=True).iteritems():
+            for key, value in i.read_parameters(params_only=True).items():
                 print('%-15s %s' % (key, value))
         print()
 
@@ -61,6 +61,13 @@ class CmdConfig(cmd.Cmd):
         Store directory location for encrypted files.
         Ex: /home/myself/Dropbox/Encrypted"""
         self.update('securedir', directory)
+        
+    def do_restoredir(self, directory):
+        """restoredir [directory]
+
+        Store directory location for restored files.
+        Ex: /home/myself/DropboxRestore"""
+        self.update('restoredir', directory)
 
     def do_public_id(self, id):
         """public_id [gpg_public_id]

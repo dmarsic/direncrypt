@@ -24,7 +24,7 @@ import os
 from direncrypt.inventory import Inventory
 from direncrypt.direncryption import DirEncryption
 from direncrypt.fileops import FileOps
-
+from direncrypt.util import printit
 
 class ConsistencyCheck(object):
     """Consistency checks between unencrypted and encrypted directories.
@@ -34,14 +34,13 @@ class ConsistencyCheck(object):
     """
 
     def __init__(self, database):
-        """Load registered file list and program parameters.
+        """Load program parameters.
 
         Program parameters are needed for file locations.
         """
         self.database = database
         with Inventory(self.database) as inventory:
             self.parameters = inventory.read_parameters()
-            self.fileset = inventory.read_register()
 
     def set_passphrase(self, passphrase):
         """Set passphrase to be used for decrypting."""
@@ -57,18 +56,22 @@ class ConsistencyCheck(object):
         This method does not report or do anything else, so another
         method may be required to show the result of the check.
         """
-        for filename in self.fileset:
+        # Load registered file list.
+        with Inventory(self.database) as inventory:
+            self.registered_files = inventory.read_register("files")
+            
+        for filename in self.registered_files:
 
             unenc_full_path = os.path.expanduser(os.path.join(
                     self.parameters['plaindir'],
-                    self.fileset[filename]['unencrypted_file']))
-            self.fileset[filename]['unencrypted_file_check'] = \
+                    self.registered_files[filename]['unencrypted_file']))
+            self.registered_files[filename]['unencrypted_file_check'] = \
                     os.path.exists(unenc_full_path)
 
             enc_full_path = os.path.expanduser(os.path.join(
                     self.parameters['securedir'],
-                    self.fileset[filename]['encrypted_file']))
-            self.fileset[filename]['encrypted_file_check'] = \
+                    self.registered_files[filename]['encrypted_file']))
+            self.registered_files[filename]['encrypted_file_check'] = \
                     os.path.exists(enc_full_path)
 
     def clean_registry(self, filename):
@@ -86,13 +89,13 @@ class ConsistencyCheck(object):
         files.
         """
         count_nok = 0
-        total_files = len(self.fileset)
+        total_files = len(self.registered_files)
 
         print('Plaindir: %s' % self.parameters['plaindir'])
         print('Securedir: %s' % self.parameters['securedir'])
         print('\nSTATUS PLAINFILE' + ' ' * 26 + ' ENCFILE')
 
-        for filename, entry in self.fileset.items():
+        for filename, entry in self.registered_files.items():
 
             unenc_exists = 'u'
             enc_exists = 'e'
@@ -128,8 +131,39 @@ class ConsistencyCheck(object):
 
 
             print('%-3s %1s%1s %-35s %-30s' % (status, unenc_exists, enc_exists,
-                    self.fileset[filename]['unencrypted_file'],
-                    self.fileset[filename]['encrypted_file']))
+                    self.registered_files[filename]['unencrypted_file'],
+                    self.registered_files[filename]['encrypted_file']))
 
         print('\nTotal files in the register: %d' % total_files)
         print('Check: %d ok, %d not ok' % (total_files - count_nok, count_nok))
+        
+    def delete_orphans_encrypted_files(self):
+        """ Delete orphans encoded files (which are not in register). 
+        
+        Normally this should not happen, but it can happen anyway 
+        after a crash during encryption or by modifying register
+        manually.
+        """
+        with Inventory(self.database) as inv:
+            enc_files = list()
+            for (dirpath, dirnames, filenames) in os.walk(self.parameters['securedir']):
+                for name in filenames:
+                    enc_files.append(name)
+            for enc_file in enc_files:
+                if not inv.exists_encrypted_file(enc_file):  
+                    FileOps.delete_file(self.parameters['securedir'], enc_file)
+    
+    def list_records(self):
+        "Displays number of records"
+        
+        with Inventory(self.database) as inv:
+            total_records = len(inv.read_register("all"))
+            reg_files = len(inv.read_register("files"))
+            reg_links = len(inv.read_register("links"))
+            reg_dirs = len(inv.read_register("dirs"))
+            
+            printit("- Registered regular files :     {}", reg_files)
+            printit("- Registered symlinks :          {}", reg_links)
+            printit("- Registered empty directories : {}", reg_dirs)
+            printit("")
+            printit("Total number of records :        {}", total_records)

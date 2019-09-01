@@ -36,10 +36,35 @@ def test_delete_file(unlink):
     r = FileOps.delete_file('test_dir', 'test_file')
     assert r == True
 
-
 @patch('direncrypt.fileops.os.unlink')
 def test_delete_file__os_error(unlink):
     """Error while deleting file."""
     unlink.side_effect = OSError('Boom!')
     r = FileOps.delete_file('test_dir', 'test_file')
+    assert r == False
+    
+@patch('direncrypt.fileops.os.symlink')
+def test_create_symlink(symlink):
+    """Symlink created successfully."""
+    r = FileOps.create_symlink('test_dir', 'test_name', 'test_target')
+    assert r == True
+    
+@patch('direncrypt.fileops.os.symlink')
+def test_create_symlink_os_error(symlink):
+    """Exception while creating symlink."""
+    symlink.side_effect = OSError('Boom!')
+    r = FileOps.create_symlink('test_dir', 'test_name', 'test_target')
+    assert r == False
+
+@patch('direncrypt.fileops.os.mkdir')
+def test_create_directory(mkdir):
+    """Directory created successfully."""
+    r = FileOps.create_directory('test_dir', 'test_name')
+    assert r == True
+    
+@patch('direncrypt.fileops.os.mkdir')
+def test_create_directory_os_error(mkdir):
+    """Error while creating directory."""
+    mkdir.side_effect = OSError('Boom!')
+    r = FileOps.create_directory('test_dir', 'test_name')
     assert r == False

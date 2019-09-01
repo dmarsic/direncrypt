@@ -30,6 +30,16 @@ from nose.tools import *
 from mock import MagicMock, patch
 from direncrypt.consistency import ConsistencyCheck
 
+saved_params = {
+    'last_timestamp': 1234567890,
+    'plaindir'      : 'param_plaindir',
+    'securedir'     : 'param_securedir',
+    'public_id'     : 'param_public_id',
+    'gpg_keyring'   : 'param_gpg_keyring',
+    'gpg_homedir'   : 'param_gpg_homedir',
+    'gpg_binary'    : 'param_gpg_binary'
+}
+
 @patch('direncrypt.consistency.Inventory')
 def test_set_passphrase(Inventory):
     """Test if passphrase is set correctly."""
@@ -74,10 +84,10 @@ def test_check(exists, expanduser, Inventory):
     c = ConsistencyCheck('test_database')
     c.check()
 
-    ok_(c.fileset['unenc_1']['unencrypted_file_check'])
-    ok_(c.fileset['unenc_1']['encrypted_file_check'])
-    ok_(not c.fileset['unenc_2']['unencrypted_file_check'])
-    ok_(c.fileset['unenc_2']['encrypted_file_check'])
+    ok_(c.registered_files['unenc_1']['unencrypted_file_check'])
+    ok_(c.registered_files['unenc_1']['encrypted_file_check'])
+    assert c.registered_files['unenc_2']['unencrypted_file_check']==False
+    ok_(c.registered_files['unenc_2']['encrypted_file_check'])
 
 @patch('direncrypt.consistency.Inventory')
 def test_clean_registry(Inventory):
@@ -97,7 +107,7 @@ def test_loop_through(delete_file, DirEncryption, Inventory):
     between tests."""
     c = ConsistencyCheck('test_database')
     c.clean_registry = MagicMock()
-    c.fileset = {
+    c.registered_files = {
         'unenc_1': {
             'unencrypted_file'       : 'unenc_1',
             'encrypted_file'         : 'enc_1',
@@ -126,3 +136,36 @@ def test_loop_through(delete_file, DirEncryption, Inventory):
     eq_(delete_file.call_count, 0)
     eq_(c.clean_registry.call_count, 0)
     eq_(DirEncryption.call_count, 1)
+
+@patch('direncrypt.consistency.Inventory')
+@patch('direncrypt.consistency.FileOps.delete_file')
+@patch('direncrypt.consistency.os.walk')
+def test_delete_orphans_encrypted_files_with_files(walk, delete_file, inv):
+    
+    c = ConsistencyCheck('test_database')
+    
+    walk.return_value = [
+        (['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2', 'unenc_3']),
+        (os.path.join('plaindir', 'subdir_1'), [], ['unenc_4'])
+    ]    
+    inv().__enter__().exists_encrypted_file.return_value = False
+    c.delete_orphans_encrypted_files()
+    eq_(delete_file.call_count, 4)
+    inv().__exit__()
+    
+@patch('direncrypt.consistency.Inventory')
+@patch('direncrypt.consistency.FileOps.delete_file')
+@patch('direncrypt.consistency.os.walk')
+def test_delete_orphans_encrypted_files_no_files(walk, delete_file, inv):
+    
+    c = ConsistencyCheck('test_database')
+    
+    walk.return_value = [
+        (['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2', 'unenc_3']),
+        (os.path.join('plaindir', 'subdir_1'), [], ['unenc_4'])
+    ]    
+    
+    inv().__enter__().exists_encrypted_file.return_value = True
+    c.delete_orphans_encrypted_files()
+    eq_(delete_file.call_count, 0)
+    

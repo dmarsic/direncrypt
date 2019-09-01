@@ -54,39 +54,64 @@ class Inventory:
             for row in self.cursor.execute('SELECT key, value FROM state'):
                 params[row[0]] = row[1]
         return params
+    
+    def read_register(self, filter: str = "all"):
+        """Get information on all registered regular files, symlinks and empty directories.
 
-    def read_register(self):
-        """Get information on all registered encrypted files.
-
+        "filter" can take the following values : "all", "files", "links" or "dirs".
+        This parameter is used to modify the SQL query and filter the results.
         Returns a dict with unencrypted filename for keys, having
-        a dict of unencrypted file, encrypted file and public id
-        as value.
+        a dict of unencrypted file, encrypted file, public id,
+        is_link and target as value.
         """
+        request_all =   """
+                        SELECT unencrypted_file, encrypted_file, public_id,
+                        is_link, target FROM register
+                        """
+        request_files = """
+                        SELECT unencrypted_file, encrypted_file, public_id,
+                        is_link, target FROM register WHERE is_link=0 and
+                        encrypted_file <>''
+                        """
+        request_links = """
+                        SELECT unencrypted_file, encrypted_file, public_id, 
+                        is_link, target FROM register WHERE is_link=1
+                        """
+        request_dirs =  """
+                        SELECT unencrypted_file, encrypted_file, public_id,
+                        is_link, target FROM register WHERE is_link=0 and
+                        encrypted_file=''
+                        """
+                         
+        switcher = { "all": request_all, "files": request_files, "links": request_links, "dirs": request_dirs }
+        request = switcher.get(filter)
+        
         rows = {}
-        for row in self.cursor.execute('''
-                SELECT unencrypted_file, encrypted_file, public_id
-                FROM register'''):
+        for row in self.cursor.execute(request):
             rows[row[0]] = {
                 'unencrypted_file': row[0],
                 'encrypted_file':   row[1],
-                'public_id':        row[2]
+                'public_id':        row[2],
+                'is_link':          row[3],
+                'target':           row[4]
             }
         return rows
     
     def read_line_from_register(self, plainfile):
         """Get encrypted filename from unencrypted filename in register"""
         result = {}
-        for row in self.cursor.execute('''
-                SELECT encrypted_file FROM register WHERE unencrypted_file = ? ''',(plainfile,)):
+        request = "SELECT encrypted_file FROM register WHERE unencrypted_file = ?"
+        for row in self.cursor.execute(request, (plainfile,)):
             result[plainfile] = {'encrypted_file':   row[0]}
         return result[plainfile]['encrypted_file']
 
-    def register(self, plain_path, enc_path, public_id):
+    def register(self, plain_path, enc_path, public_id, is_link, link_target):
         """Register input and output filenames into a database."""
+        is_link_int = int(is_link)
         self.cursor.execute('''INSERT OR REPLACE INTO register
-            (unencrypted_file, encrypted_file, public_id)
-            VALUES (?,?,?)''',
-            (plain_path, enc_path, public_id))
+            (unencrypted_file, encrypted_file, public_id, is_link, target)
+            VALUES (?,?,?,?,?)''',
+            (plain_path, enc_path, public_id, is_link_int, link_target))
 
     def update_last_timestamp(self):
         """Update last timestamp in the database."""
@@ -100,6 +125,15 @@ class Inventory:
 
     def clean_record(self, filename):
         """Delete record based on the unencrypted filename."""
-        self.cursor.execute(
-                '''DELETE FROM register WHERE unencrypted_file = ?''',
-                (filename,))
+        request = "DELETE FROM register WHERE unencrypted_file = ?"
+        self.cursor.execute(request, (filename,))
+        
+    def exists_encrypted_file(self, filename):
+        """Tests if an encoded filename exists in register.
+        
+        Returns True if 'filename' is found, False otherwise.
+        """
+        request = "SELECT encrypted_file FROM register WHERE encrypted_file = ?"
+        self.cursor.execute(request, (filename,))
+        enc_filenames = self.cursor.fetchall()
+        return bool(enc_filenames)

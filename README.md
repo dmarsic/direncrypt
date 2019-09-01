@@ -152,3 +152,9 @@ See `LICENSE` file.
 Domagoj Marsic
 
 <dmars@protonmail.com>
+
+## Contributor
+
+Luc Donnadieu
+
+<hect0r@dlooc.eu>
