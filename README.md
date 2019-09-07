@@ -8,23 +8,17 @@ Sync directories with unencrypted and encrypted files using GPG encryption funct
 
 ### First Setup
 
-Check *Dependencies* below if the program does not run due to missing dependencies.
+**direncrypt** is a Python 3 project that uses Pipfile for managing dependencies. Clone the repository to a local directory and run `pipenv install`.
 
-**direncrypt** requires SQLite database `inventory.sqlite`. Ensure that *sqlite3* is available and run:
-
-```
-sqlite3 inventory.sqlite < schema.sql
-```
-
-It is assumed that GPG has been configured on the host. If not, this is the place to start: https://gnupg.org/
-
-Additionally, GPG 2.1 requires an additional parameter in `gpg-agent.conf`. If the file does not exist, create it.
+**direncrypt** requires SQLite database `inventory.sqlite` in the root directory of the project. Ensure that *sqlite3* is available and run all sql files from `sql` directory:
 
 ```
-allow-loopback-pinentry
+for f in sql/*; do sqlite3 inventory.sqlite < $f; done
 ```
 
-A recommended next step is to set GPG parameters by running:
+It is assumed that GPG has been configured on the host. If not, this is the place to start: https://gnupg.org/. In short, gpg keys need to be generated, and with gpg2 this command should be enough: `gpg2 --full-generate-key`. Still, the user should familiarise themselves with GPG.
+
+A recommended next step is to set GPG parameters for **direncrypt** by running:
 
 ```
 python encrypt.py --configure
@@ -37,6 +31,7 @@ PARAMETER       VALUE
 ----------------------------------------
 plaindir        ~/DropboxLocal
 securedir       ~/Dropbox/Enc
+restoredir      ~/DropboxRestore
 public_id       None
 gpg_keyring     pubring.kbx
 gpg_homedir     ~/.gnupg
@@ -66,6 +61,7 @@ encrypt.py -d
 encrypt.py --encrypt \
            --plaindir ~/DropboxLocal \
            --securedir ~/Dropbox/Enc \
+           --restoredir ~/DropboxRestore \
            --public-id BADCOFFE \
            --gpg-homedir ~/.gnupg \
            --gpg-keyring pubring.kbx \
@@ -75,7 +71,7 @@ encrypt.py --encrypt \
 4) Decrypt all files to another location:
 
 ```
-encrypt.py -d --plaindir ~/NewLocation
+encrypt.py -d --restoredir ~/NewLocation
 ```
 
 ### Command-line options
@@ -92,6 +88,7 @@ OPERATION
 PARAMETERS
     -p|--plaindir
     -s|--securedir
+    -r|--restoredir
     -i|--public-id
     -P|--passphrase
     -H|--gpg-homedir
@@ -139,9 +136,7 @@ This database contains mapping between unencrypted filenames and encrypted filen
 ## Dependencies
 
 * GnuPG: https://gnupg.org/
-* Python modules: `python-gnupg` (https://github.com/vsajip/python-gnupg), `sqlite3`
-
-`lib/direncrypt/gpgops.py` imports `gnupg`. Ensure that `gnupg.py` is found. Some options include adding path to it to `PYTHONPATH` or linking to `gnupg.py` from `lib/direncrypt` directory (I would not recommend the latter).
+* SQLite3: https://www.sqlite.org/
 
 ## License
 
