@@ -20,8 +20,6 @@
 # <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
-import sys
-import os
 import nose
 from nose.tools import *
 from mock import MagicMock, patch
