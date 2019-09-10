@@ -22,9 +22,6 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), 'lib'))
-
-
 import nose
 from nose.tools import *
 from mock import MagicMock, patch

@@ -20,11 +20,7 @@
 # <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
-import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), 'lib'))
-
-
 import nose
 from nose.tools import *
 from mock import MagicMock, patch
@@ -141,31 +137,30 @@ def test_loop_through(delete_file, DirEncryption, Inventory):
 @patch('direncrypt.consistency.FileOps.delete_file')
 @patch('direncrypt.consistency.os.walk')
 def test_delete_orphans_encrypted_files_with_files(walk, delete_file, inv):
-    
+
     c = ConsistencyCheck('test_database')
-    
+
     walk.return_value = [
         (['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2', 'unenc_3']),
         (os.path.join('plaindir', 'subdir_1'), [], ['unenc_4'])
-    ]    
+    ]
     inv().__enter__().exists_encrypted_file.return_value = False
     c.delete_orphans_encrypted_files()
     eq_(delete_file.call_count, 4)
     inv().__exit__()
-    
+
 @patch('direncrypt.consistency.Inventory')
 @patch('direncrypt.consistency.FileOps.delete_file')
 @patch('direncrypt.consistency.os.walk')
 def test_delete_orphans_encrypted_files_no_files(walk, delete_file, inv):
-    
+
     c = ConsistencyCheck('test_database')
-    
+
     walk.return_value = [
         (['plaindir'], ['subdir_1'], ['unenc_1', 'unenc_2', 'unenc_3']),
         (os.path.join('plaindir', 'subdir_1'), [], ['unenc_4'])
-    ]    
-    
+    ]
+
     inv().__enter__().exists_encrypted_file.return_value = True
     c.delete_orphans_encrypted_files()
     eq_(delete_file.call_count, 0)
-    

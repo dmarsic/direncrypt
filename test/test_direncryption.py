@@ -20,11 +20,6 @@
 # <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
-import sys
-import os
-sys.path.append(os.path.join(os.getcwd(), 'lib'))
-
-
 import os
 import nose
 from nose.tools import *
@@ -94,7 +89,7 @@ def test_set_parameters__from_args(expanduser, Inventory, GPGOps):
     args.gpg_keyring = 'runtime_gpg_keyring'
     args.gpg_homedir = 'runtime_gpg_homedir'
     args.gpg_binary = 'runtime_gpg_binary'
-    
+
     expanduser.side_effect = [
         args.plaindir,
         args.securedir,
@@ -199,7 +194,7 @@ def test_encrypt_regular_files(delete_file, encrypt, find_ufiles, Inventory, GPG
     eq_(encrypt.call_args_list[0][0][0], 'test_path_1')
     eq_(encrypt.call_args_list[1][0][0], 'test_path_2')
     eq_(encrypt.call_args_list[2][0][0], 'test_path_3')
-    
+
 
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
@@ -439,19 +434,19 @@ def test_find_unencrypted_files(islink, stat, walk, expanduser, Inventory, GPGOp
     de = DirEncryption(test_args)
     files = de.find_unencrypted_files(register)
     eq_(len(files), 0)
-    
+
     islink.reset_mock()
     islink.return_value = False
     files = de.find_unencrypted_files(register)
     eq_(len(files), 4)
     ok_('unenc_3' in files.keys())
     ok_(os.path.join('subdir_1', 'unenc_4') in files.keys())
-    
+
     stat.reset_mock()
     stat.return_value.st_mtime = 1234567885
     files = de.find_unencrypted_files(register)
     eq_(len(files), 3)
-    
+
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
@@ -494,17 +489,17 @@ def test_find_unregistered_links(readlink, islink, stat, walk, expanduser, Inven
     eq_(len(links), 6)
     ok_('unenc_3' in links.keys())
     ok_(os.path.join('subdir_1', 'unenc_4') in links.keys())
-    
+
     stat.reset_mock()
     stat.return_value.st_mtime = 1234567885
     links = de.find_unregistered_links(register)
     eq_(len(links), 5)
-    
+
     islink.reset_mock()
     islink.return_value = False
     links = de.find_unregistered_links(register)
     eq_(len(links), 0)
-    
+
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
@@ -542,12 +537,12 @@ def test_find_unregistered_empty_dirs( stat, walk, expanduser, Inventory, GPGOps
     dirs = de.find_unregistered_empty_dirs(register)
     eq_(len(dirs), 1)
     ok_('subdir_1' in dirs.keys())
-    
+
     stat.reset_mock()
     stat.return_value.st_mtime = 1234567885
     dirs = de.find_unregistered_empty_dirs(register)
     eq_(len(dirs), 0)
-    
+
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
@@ -586,7 +581,7 @@ def test_clean_files(listdir, isfile, expanduser, Inventory, GPGOps):
     de = DirEncryption(test_args)
     de.clean(inv)
     eq_(inv.clean_record.call_count, 6)
-    
+
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
@@ -625,7 +620,7 @@ def test_clean_links(listdir, islink, expanduser, Inventory, GPGOps):
     de = DirEncryption(test_args)
     de.clean(inv)
     eq_(inv.clean_record.call_count, 6)
-    
+
 @patch('direncrypt.direncryption.GPGOps')
 @patch('direncrypt.direncryption.Inventory')
 @patch('direncrypt.direncryption.os.path.expanduser')
@@ -664,10 +659,10 @@ def test_clean_dirs(listdir, isdir, expanduser, Inventory, GPGOps):
     de = DirEncryption(test_args)
     de.clean(inv)
     eq_(inv.clean_record.call_count, 6)
-    
+
     inv.reset_mock()
     isdir.reset_mock()
-    
+
     inv.read_register.return_value = {
         'unenc_7': {
             'unencrypted_file': 'unenc_7',

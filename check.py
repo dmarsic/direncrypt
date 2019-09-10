@@ -29,13 +29,9 @@ that contains mapping between encrypted and unencrypted files.
 Reports discrepancies unless switch is specified to clean up.
 """
 
-import sys
 import os
 import argparse
 import getpass
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                             'lib'))
-
 from direncrypt.consistency import ConsistencyCheck
 
 

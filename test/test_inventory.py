@@ -20,11 +20,6 @@
 # <dmars+github@protonmail.com>
 #------------------------------------------------------------------------------
 
-import sys
-import os
-sys.path.append(os.path.join(os.getcwd(), 'lib'))
-
-
 import nose
 from nose.tools import *
 from mock import MagicMock, patch
@@ -97,7 +92,7 @@ def test_read_registered_files(connect):
     eq_(rows['unenc_2']['public_id'], 'public_id_2')
     eq_(rows['unenc_2']['is_link'], 0)
     eq_(rows['unenc_2']['target'], '')
-    
+
 @patch('direncrypt.inventory.sqlite3.connect')
 def test_read_registered_links(connect):
 
@@ -117,7 +112,7 @@ def test_read_registered_links(connect):
     eq_(rows['unenc_2']['public_id'], '')
     eq_(rows['unenc_2']['is_link'], 1)
     eq_(rows['unenc_2']['target'], 'target_2')
-    
+
 @patch('direncrypt.inventory.sqlite3.connect')
 def test_read_registered_dirs(connect):
 
@@ -156,7 +151,7 @@ def test_update_parameters(connect):
 
         eq_(inv.cursor.execute.call_count, 1)
         eq_(inv.cursor.execute.call_args[0][1], ('value_1', 'key_1'))
-        
+
 @patch('direncrypt.inventory.sqlite3.connect')
 def test_exists_encrypted_file(connect):
 
