@@ -22,7 +22,7 @@
 
 import os
 import gnupg
-from direncrypt.util import PYTHON_VERSION
+from direncrypt.util import PYTHON_VERSION, printit
 
 
 class GPGOps(object):
@@ -41,6 +41,7 @@ class GPGOps(object):
                  verbose=False):
         """Set GPG parameters for encrypt/decrypt operations."""
         self.recipient = gpg_recipient
+        self.verbose = verbose
         self.gpg = gnupg.GPG(gpgbinary=gpg_binary,
                              gnupghome=gpg_homedir,
                              keyring=gpg_keyring,
@@ -49,10 +50,11 @@ class GPGOps(object):
     def encrypt(self, plainfile, encfile):
         """Encrypt content from plainfile into encfile."""
         with open(plainfile, mode = 'rb') as f:
-            self.gpg.encrypt(f.read(),
-                             self.recipient,
-                             armor=False,
-                             output=encfile)
+            return self.gpg.encrypt(
+                f.read(),
+                self.recipient,
+                armor=False,
+                output=encfile)
 
     def decrypt(self, encfile, plainfile, phrase):
         """Decrypt content from encfile into plainfile."""
@@ -65,6 +67,7 @@ class GPGOps(object):
         if not os.path.exists(plaindir):
             os.makedirs(plaindir)
         with open(encfile, mode='rb') as f:
-            self.gpg.decrypt(f.read(),
-                             passphrase=phrase,
-                             output=plainfile)
+            return self.gpg.decrypt(
+                f.read(),
+                passphrase=phrase,
+                output=plainfile)

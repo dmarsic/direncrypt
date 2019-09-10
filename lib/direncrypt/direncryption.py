@@ -106,17 +106,17 @@ class DirEncryption(object):
         printit("Encrypting all directory '{}', please wait...", self.plaindir)
         with Inventory(self.database) as inv:
             register = inv.read_register("all")
-            
+
             # treat regular files first
             self.encrypt_regular_files(register, inv)
             # then treat empty directories
             self.register_empty_dirs(register, inv)
             # finally treat symlinks
             self.register_symlinks(register, inv)
-            
+
             self.do_inv_maintenance(inv)
             printit("Done !")
-    
+
     def encrypt_regular_files(self, register, inventory):
         """Encrypt all regular files"""
         files = self.find_unencrypted_files(register)
@@ -126,10 +126,10 @@ class DirEncryption(object):
                 encfile = inventory.read_line_from_register(plainfile)
                 FileOps.delete_file(self.securedir, encfile)
             encryptedfile = self.generate_name()
-            self.encrypt(plainfile, encryptedfile, inventory)
-            if self.verbose:
+            encrypted_ok = self.encrypt(plainfile, encryptedfile, inventory)
+            if encrypted_ok and self.verbose:
                 printit('Encrypted file: {} ---> {}', plainfile, encryptedfile)
-                
+
     def register_empty_dirs(self, register, inventory):
         """Register all empty directories"""
         dirs = self.find_unregistered_empty_dirs(register)
@@ -140,7 +140,7 @@ class DirEncryption(object):
             self.register(dir_name, inventory, False)
             if self.verbose:
                 printit('Registered empty directory: {}', dir_name)
-                
+
     def register_symlinks(self, register, inventory):
         """Register all symlinks"""
         links = self.find_unregistered_links(register)
@@ -151,36 +151,43 @@ class DirEncryption(object):
             self.register(link_name, inventory, True, val['target'])
             if self.verbose:
                 printit('Registered symlink: {} ---> {}', link_name, val['target'])
-    
+
     def do_inv_maintenance(self, inventory):
         """Clean register and update timestamp"""
         self.clean(inventory)
         inventory.update_last_timestamp()
-        
+
     def encrypt(self, plainfile, encfile, inventory, is_link=False):
         """Encrypt the file and register input and output filenames."""
         plain_path = os.path.join(self.plaindir, plainfile)
         encrypted_path = os.path.join(self.securedir, encfile)
-        self.gpg.encrypt(plain_path, encrypted_path)
-        inventory.register(plainfile, encfile, self.public_id, is_link, '')
-        
+        result = self.gpg.encrypt(plain_path, encrypted_path)
+        if result.ok:
+            inventory.register(plainfile, encfile, self.public_id, is_link, '')
+        else:
+            printit(
+                'FAILED encryption of: {}\n\t{}',
+                plainfile,
+                result.stderr.replace('\n', '\n\t'))
+        return result.ok
+
     def register(self, plainfile, inventory, is_link, link_target=None):
         """Register symlinks and empty directories."""
         inventory.register(plainfile, '', '', is_link, link_target)
 
     def clean(self, inv):
         """Clean register and file system
-        
-        If some files, links or empty directories have been 
-        deleted in the root directory, they must be removed 
+
+        If some files, links or empty directories have been
+        deleted in the root directory, they must be removed
         from the register
         """
-        
+
         printit("Clean register and file system...")
         registered_files = inv.read_register("files")
         registered_links = inv.read_register("links")
         registered_dirs = inv.read_register("dirs")
-        
+
         # Clean regular files
         for filename, record in registered_files.items():
             unenc_filename_path = os.path.join(self.plaindir, filename)
@@ -190,7 +197,7 @@ class DirEncryption(object):
                     printit("  --> Delete encrypted file {} and unregister", record['encrypted_file'])
                     FileOps.delete_file(self.securedir, record['encrypted_file'])
                 inv.clean_record(filename)
-                
+
         # Clean symlinks
         for filename, record in registered_links.items():
             unenc_filename_path = os.path.join(self.plaindir, filename)
@@ -209,7 +216,7 @@ class DirEncryption(object):
                 if os.listdir(unenc_filename_path):
                     printit("  --> Unregister  non empty directory {}", filename)
                     inv.clean_record(filename)
-        
+
     def decrypt_all(self, passphrase):
         """Decrypt all files from encrypted source.
 
@@ -244,7 +251,14 @@ class DirEncryption(object):
         restored_path = os.path.join(self.restoredir, plainfile)
         if self.verbose:
             printit('Decrypt: {} ---> {}', encrypted_path, restored_path)
-        self.gpg.decrypt(encrypted_path, restored_path, phrase)
+        result = self.gpg.decrypt(encrypted_path, restored_path, phrase)
+        if not result.ok:
+            printit(
+                'FAILED decryption of: {} to {}\n\t{}',
+                encfile,
+                plainfile,
+                result.stderr.replace('\n', '\n\t'))
+        return result.ok
 
     def find_unencrypted_files(self, register):
         """List all files that need to be encrypted.
@@ -330,7 +344,7 @@ class DirEncryption(object):
                         enc_flag, int(mtime), self.last_timestamp,
                         relative_path)
         return links
-    
+
     def find_unregistered_empty_dirs(self, register):
         """List all empty directories that need to be registered.
 
@@ -366,7 +380,7 @@ class DirEncryption(object):
                     enc_flag, int(mtime), self.last_timestamp,
                         relative_path)
         return result
-         
+
     def generate_name(self):
         """Return a unique file name for encrypted file."""
         return str(uuid.uuid4())

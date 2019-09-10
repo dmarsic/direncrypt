@@ -27,31 +27,63 @@ sys.path.append(os.path.join(os.getcwd(), 'lib'))
 
 import tempfile
 import nose
-from nose.tools import *
+from nose.tools import ok_, eq_
 from mock import MagicMock, patch
 from direncrypt.gpgops import GPGOps
 
 @patch('direncrypt.gpgops.gnupg.GPG')
-def test_encrypt(gpg):
+@patch('builtins.open')
+def test_encrypt_ok(open, GPG):
+    """Successful encryption sets 'ok' attribute to True."""
+    crypt_result = MagicMock()
+    crypt_result.ok = True
+    GPG.encrypt.return_value = crypt_result
+
     g = GPGOps(gpg_recipient='B183CAFE')
+    result = g.encrypt('plainfile', 'encryptedfile')
 
-    fsrc = tempfile.NamedTemporaryFile()
-    plainfile = fsrc.name
-    encryptedfile = 'encryptedfile'
-    g.encrypt(plainfile, encryptedfile)
-
-    eq_(g.gpg.encrypt.call_count, 1)
+    ok_(result.ok)
 
 
-@patch('direncrypt.gpgops.os')
 @patch('direncrypt.gpgops.gnupg.GPG')
-def test_decrypt(os, gpg):
+@patch('builtins.open')
+def test_encrypt_fail(open, GPG):
+    """Unsuccessful encryption sets 'ok' attribute to False."""
+    crypt_result = MagicMock()
+    crypt_result.ok = False
+    GPG.encrypt.return_value = crypt_result
+
     g = GPGOps(gpg_recipient='B183CAFE')
+    result = g.encrypt('plainfile', 'encryptedfile')
 
-    fsrc = tempfile.NamedTemporaryFile()
-    encryptedfile = fsrc.name
-    plainfile = 'plainfile'
-    phrase = 'trustno1'
-    g.decrypt(encryptedfile, plainfile, phrase)
+    not ok_(result.ok)
 
-    eq_(g.gpg.decrypt.call_count, 1)
+
+@patch('direncrypt.gpgops.gnupg.GPG')
+@patch('builtins.open')
+@patch('direncrypt.gpgops.os')
+def test_decrypt_ok(os, open, GPG):
+    """Successful decryption sets 'ok' attribute to True."""
+    crypt_result = MagicMock()
+    crypt_result.ok = True
+    GPG.encrypt.return_value = crypt_result
+
+    g = GPGOps(gpg_recipient='B183CAFE')
+    result = g.decrypt('encryptedfile', 'plainfile', 'phrase')
+
+    ok_(result.ok)
+
+
+@patch('direncrypt.gpgops.gnupg.GPG')
+@patch('builtins.open')
+@patch('direncrypt.gpgops.os')
+def test_decrypt_ok(os, open, GPG):
+    """Successful decryption sets 'ok' attribute to False."""
+    crypt_result = MagicMock()
+    crypt_result.ok = False
+    GPG.encrypt.return_value = crypt_result
+
+    g = GPGOps(gpg_recipient='B183CAFE')
+    result = g.decrypt('encryptedfile', 'plainfile', 'phrase')
+
+    not ok_(result.ok)
