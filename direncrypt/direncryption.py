@@ -27,7 +27,7 @@ import logging
 from direncrypt.gpgops import GPGOps
 from direncrypt.inventory import Inventory
 from direncrypt.fileops import FileOps
-from direncrypt.util import printit
+
 
 class DirEncryption(object):
     """DirEncryption encrypts and decrypts files between two directories.
@@ -63,7 +63,7 @@ class DirEncryption(object):
             parameters = i.read_parameters()
         for parameter, value in parameters.items():
             if self.verbose:
-                printit('Parameters: {:<15} : {}', parameter, value)
+                print('Parameters: {:<15} : {}'.format(parameter, value))
 
         self.last_timestamp = parameters['last_timestamp']
 
@@ -103,7 +103,7 @@ class DirEncryption(object):
         The files are recursively searched for in the source directory.
         """
         register = {}
-        printit("Encrypting all directory '{}', please wait...", self.plaindir)
+        print("Encrypting all directory '{}', please wait...".format(self.plaindir))
         with Inventory(self.database) as inv:
             register = inv.read_register("all")
 
@@ -115,10 +115,10 @@ class DirEncryption(object):
             self.register_symlinks(register, inv)
 
             self.do_inv_maintenance(inv)
-            printit("Done !")
+            print("Done !")
 
     def encrypt_regular_files(self, register, inventory):
-        """Encrypt all regular files"""
+        """Encrypt all regular files."""
         files = self.find_unencrypted_files(register)
         for plainfile, val in files.items():
             if not val['is_new']:
@@ -128,10 +128,10 @@ class DirEncryption(object):
             encryptedfile = self.generate_name()
             encrypted_ok = self.encrypt(plainfile, encryptedfile, inventory)
             if encrypted_ok and self.verbose:
-                printit('Encrypted file: {} ---> {}', plainfile, encryptedfile)
+                print('Encrypted file: {} ---> {}'.format(plainfile, encryptedfile))
 
     def register_empty_dirs(self, register, inventory):
-        """Register all empty directories"""
+        """Register all empty directories."""
         dirs = self.find_unregistered_empty_dirs(register)
         for dir_name, val in dirs.items():
             if not val['is_new']:
@@ -139,10 +139,10 @@ class DirEncryption(object):
                 inventory.clean_record(dir_name)
             self.register(dir_name, inventory, False)
             if self.verbose:
-                printit('Registered empty directory: {}', dir_name)
+                print('Registered empty directory: {}'.format(dir_name))
 
     def register_symlinks(self, register, inventory):
-        """Register all symlinks"""
+        """Register all symlinks."""
         links = self.find_unregistered_links(register)
         for link_name, val in links.items():
             if not val['is_new']:
@@ -150,10 +150,10 @@ class DirEncryption(object):
                 inventory.clean_record(link_name)
             self.register(link_name, inventory, True, val['target'])
             if self.verbose:
-                printit('Registered symlink: {} ---> {}', link_name, val['target'])
+                print('Registered symlink: {} ---> {}'.format(link_name, val['target']))
 
     def do_inv_maintenance(self, inventory):
-        """Clean register and update timestamp"""
+        """Clean register and update timestamp."""
         self.clean(inventory)
         inventory.update_last_timestamp()
 
@@ -165,10 +165,8 @@ class DirEncryption(object):
         if result.ok:
             inventory.register(plainfile, encfile, self.public_id, is_link, '')
         else:
-            printit(
-                'FAILED encryption of: {}\n\t{}',
-                plainfile,
-                result.stderr.replace('\n', '\n\t'))
+            message = result.stderr.replace('\n', '\n\t')
+            print('FAILED encryption of: {}\n\t{}'.format(plainfile, message))
         return result.ok
 
     def register(self, plainfile, inventory, is_link, link_target=None):
@@ -183,7 +181,7 @@ class DirEncryption(object):
         from the register
         """
 
-        printit("Clean register and file system...")
+        print("Clean register and file system...")
         registered_files = inv.read_register("files")
         registered_links = inv.read_register("links")
         registered_dirs = inv.read_register("dirs")
@@ -194,7 +192,7 @@ class DirEncryption(object):
             enc_filename_path = os.path.join(self.securedir, record['encrypted_file'])
             if not os.path.isfile(unenc_filename_path):
                 if os.path.isfile(enc_filename_path):
-                    printit("  --> Delete encrypted file {} and unregister", record['encrypted_file'])
+                    print("  --> Delete encrypted file {} and unregister".format(record['encrypted_file']))
                     FileOps.delete_file(self.securedir, record['encrypted_file'])
                 inv.clean_record(filename)
 
@@ -202,19 +200,19 @@ class DirEncryption(object):
         for filename, record in registered_links.items():
             unenc_filename_path = os.path.join(self.plaindir, filename)
             if not os.path.islink(unenc_filename_path):
-                printit("  --> Unregister symlink {}", filename)
+                print("  --> Unregister symlink {}".format(filename))
                 inv.clean_record(filename)
 
         # Clean empty directories
         for filename, record in registered_dirs.items():
             unenc_filename_path = os.path.join(self.plaindir, filename)
             if not os.path.isdir(unenc_filename_path):
-                printit("  --> Unregister empty directory {}", filename)
+                print("  --> Unregister empty directory {}".format(filename))
                 inv.clean_record(filename)
             elif os.path.isdir(unenc_filename_path):
                 # unregister if the directory has been filled
                 if os.listdir(unenc_filename_path):
-                    printit("  --> Unregister  non empty directory {}", filename)
+                    print("  --> Unregister  non empty directory {}".format(filename))
                     inv.clean_record(filename)
 
     def decrypt_all(self, passphrase):
@@ -236,7 +234,7 @@ class DirEncryption(object):
                         self.decrypt(record['encrypted_file'], record['unencrypted_file'], passphrase)
                     except IOError as e:
                         logging.warning('decrypt_all: {}'.format(e))
-                        printit('Failed to create file {} : {}', record['unencrypted_file'], str(e))
+                        print('Failed to create file {} : {}'.format(record['unencrypted_file'], str(e)))
                 # then restore empty directories
                 elif record['is_link'] == 0 and not record['encrypted_file'] and not record['public_id']:
                     FileOps.create_directory(self.restoredir, record['unencrypted_file'])
@@ -250,14 +248,11 @@ class DirEncryption(object):
         encrypted_path = os.path.join(self.securedir, encfile)
         restored_path = os.path.join(self.restoredir, plainfile)
         if self.verbose:
-            printit('Decrypt: {} ---> {}', encrypted_path, restored_path)
+            print('Decrypt: {} ---> {}'.format(encrypted_path, restored_path))
         result = self.gpg.decrypt(encrypted_path, restored_path, phrase)
         if not result.ok:
-            printit(
-                'FAILED decryption of: {} to {}\n\t{}',
-                encfile,
-                plainfile,
-                result.stderr.replace('\n', '\n\t'))
+            message = result.stderr.replace('\n', '\n\t')
+            print('FAILED decryption of: {} to {}\n\t{}'.format(encfile, plainfile, message))
         return result.ok
 
     def find_unencrypted_files(self, register):
@@ -273,7 +268,7 @@ class DirEncryption(object):
         """
         files = {}
         if self.verbose:
-            printit('Walking: {}', self.plaindir)
+            print('Walking: {}'.format(self.plaindir))
 
         for (dirpath, dirnames, filenames) in os.walk(self.plaindir):
             for name in filenames:
@@ -295,9 +290,8 @@ class DirEncryption(object):
                     # file has not changed since last run
                     enc_flag = ' '
                 if self.verbose:
-                    printit('List files: {} {} ({}): {}',
-                            enc_flag, int(mtime), self.last_timestamp,
-                            relative_path)
+                    print('List files: {} {} ({}): {}'.format(
+                        enc_flag, int(mtime), self.last_timestamp, relative_path))
         return files
 
     def find_unregistered_links(self, register):
@@ -309,7 +303,7 @@ class DirEncryption(object):
         """
         links = {}
         if self.verbose:
-            printit('Walking: {}', self.plaindir)
+            print('Walking: {}'.format(self.plaindir))
         links_to_treat = list()
         # get symlinks to directories
         for (dirpath, dirnames, filenames) in os.walk(self.plaindir, followlinks=True):
@@ -340,9 +334,8 @@ class DirEncryption(object):
                 # link has not changed since last run
                 enc_flag = ' '
             if self.verbose:
-                printit('List links: {} {} ({}): {}',
-                        enc_flag, int(mtime), self.last_timestamp,
-                        relative_path)
+                print('List links: {} {} ({}): {}'.format(
+                    enc_flag, int(mtime), self.last_timestamp, relative_path))
         return links
 
     def find_unregistered_empty_dirs(self, register):
@@ -353,7 +346,7 @@ class DirEncryption(object):
         """
         result = {}
         if self.verbose:
-            printit('Walking: {}', self.plaindir)
+            print('Walking: {}'.format(self.plaindir))
         empty_dirs = list()
         for (dirpath, dirnames, filenames) in os.walk(self.plaindir):
             if not dirnames and not filenames:
@@ -376,9 +369,8 @@ class DirEncryption(object):
                 # dir has not changed since last run
                 enc_flag = ' '
             if self.verbose:
-                printit('List empty directories: {} {} ({}): {}',
-                    enc_flag, int(mtime), self.last_timestamp,
-                        relative_path)
+                print('List empty directories: {} {} ({}): {}'.format(
+                    enc_flag, int(mtime), self.last_timestamp, relative_path))
         return result
 
     def generate_name(self):

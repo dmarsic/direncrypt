@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
 # direncrypt - Sync contents between encrypted and decrypted directories
-# Copyright (C) 2015  Domagoj Marsic
+# Copyright (C) 2015-2019  Domagoj Marsic
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 
 import os
 import gnupg
-from direncrypt.util import PYTHON_VERSION, printit
 
 
 class GPGOps(object):
@@ -58,11 +57,6 @@ class GPGOps(object):
 
     def decrypt(self, encfile, plainfile, phrase):
         """Decrypt content from encfile into plainfile."""
-        if PYTHON_VERSION == 2 and \
-                not plainfile == plainfile.encode('ascii', errors='replace'):
-            plainfile = plainfile.encode('ascii', errors='ignore')
-            print('Python 2: python-gnupg doesn\'t support unicode in filenames. '
-                  'Decrypting to: {}'.format(plainfile))
         plaindir = os.path.dirname(plainfile)
         if not os.path.exists(plaindir):
             os.makedirs(plaindir)

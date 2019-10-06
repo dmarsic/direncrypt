@@ -2,7 +2,7 @@
 
 #------------------------------------------------------------------------------
 # direncrypt - Sync contents between encrypted and decrypted directories
-# Copyright (C) 2015  Domagoj Marsic
+# Copyright (C) 2015-2019  Domagoj Marsic
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,9 +57,9 @@ Sample usage:
                  --gpg-binary gpg2
 """
 
-import os
 import argparse
 import getpass
+from direncrypt import DATABASE
 from direncrypt.configuration import RunConfig
 from direncrypt.direncryption import DirEncryption
 
@@ -73,8 +73,7 @@ under certain conditions; see 'LICENSE' file for details.
 
 
 if __name__ == '__main__':
-    database = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'inventory.sqlite')
+    database = DATABASE
 
     parser = argparse.ArgumentParser(
             description='Encrypt and transfer files between two directories.')
