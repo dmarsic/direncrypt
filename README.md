@@ -10,21 +10,15 @@ Sync directories with unencrypted and encrypted files using GPG encryption funct
 
 **direncrypt** is a Python 3 project that uses Pipfile for managing dependencies. Clone the repository to a local directory and run `pipenv install`.
 
-**direncrypt** requires SQLite database `inventory.sqlite` in the root directory of the project. Ensure that *sqlite3* is available and run all sql files from `sql` directory:
-
-```
-for f in sql/*; do sqlite3 inventory.sqlite < $f; done
-```
-
 It is assumed that GPG has been configured on the host. If not, this is the place to start: https://gnupg.org/. In short, gpg keys need to be generated, and with gpg2 this command should be enough: `gpg2 --full-generate-key`. Still, the user should familiarise themselves with GPG.
 
-A recommended next step is to set GPG parameters for **direncrypt** by running:
+A required next step is to set GPG parameters for **direncrypt** by running:
 
 ```
 python encrypt.py --configure
 ```
 
-Some defaults have been pre-set. To change them, specify `key value`, as shown in the example below:
+This will create the inventory database `inventory.sqlite` from SQL files in sql directory. Some defaults have been pre-set. To change them, specify `key value`, as shown in the example below:
 
 ```
 PARAMETER       VALUE
@@ -136,7 +130,6 @@ This database contains mapping between unencrypted filenames and encrypted filen
 ## Dependencies
 
 * GnuPG: https://gnupg.org/
-* SQLite3: https://www.sqlite.org/
 
 ## License
 

@@ -32,13 +32,13 @@ Reports discrepancies unless switch is specified to clean up.
 import os
 import argparse
 import getpass
+from direncrypt import DATABASE
 from direncrypt.consistency import ConsistencyCheck
 
 
 if __name__ == "__main__":
 
-    database = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), 'inventory.sqlite')
+    database = DATABASE
 
     parser = argparse.ArgumentParser(
             'Check/fix consistency between unencrypted and encrypted files')

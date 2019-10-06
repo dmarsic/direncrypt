@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
 # direncrypt - Sync contents between encrypted and decrypted directories
-# Copyright (C) 2015  Domagoj Marsic
+# Copyright (C) 2015-2019  Domagoj Marsic
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 
 import os
 import cmd
+from direncrypt.database_builder import DatabaseBuilder
 from direncrypt.inventory import Inventory
 
 class CmdConfig(cmd.Cmd):
@@ -61,7 +62,7 @@ class CmdConfig(cmd.Cmd):
         Store directory location for encrypted files.
         Ex: /home/myself/Dropbox/Encrypted"""
         self.update('securedir', directory)
-        
+
     def do_restoredir(self, directory):
         """restoredir [directory]
 
@@ -129,6 +130,8 @@ class RunConfig(object):
 
         if database is None:
             database = 'inventory.sqlite'
+        database_builder = DatabaseBuilder(database)
+        database_builder.build(force=False)
 
         cc = CmdConfig()
         cc.do_set_database(database)

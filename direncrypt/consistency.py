@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
 # direncrypt - Sync contents between encrypted and decrypted directories
-# Copyright (C) 2015  Domagoj Marsic
+# Copyright (C) 2015-2019  Domagoj Marsic
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import os
 from direncrypt.inventory import Inventory
 from direncrypt.direncryption import DirEncryption
 from direncrypt.fileops import FileOps
-from direncrypt.util import printit
+
 
 class ConsistencyCheck(object):
     """Consistency checks between unencrypted and encrypted directories.
@@ -59,7 +59,7 @@ class ConsistencyCheck(object):
         # Load registered file list.
         with Inventory(self.database) as inventory:
             self.registered_files = inventory.read_register("files")
-            
+
         for filename in self.registered_files:
 
             unenc_full_path = os.path.expanduser(os.path.join(
@@ -79,7 +79,6 @@ class ConsistencyCheck(object):
         print("Cleaning from registry: {}".format(filename))
         with Inventory(self.database) as inventory:
             inventory.clean_record(filename)
-        return True
 
     def loop_through(self, clean=False, resync=False):
         """Go through all entries and take action based on user input.
@@ -91,9 +90,9 @@ class ConsistencyCheck(object):
         count_nok = 0
         total_files = len(self.registered_files)
 
-        print('Plaindir: %s' % self.parameters['plaindir'])
-        print('Securedir: %s' % self.parameters['securedir'])
-        print('\nSTATUS PLAINFILE' + ' ' * 26 + ' ENCFILE')
+        print('Plaindir: {}'.format(self.parameters['plaindir']))
+        print('Securedir: {}'.format(self.parameters['securedir']))
+        print('\nSTATUS PLAINFILE{}ENCFILE'.format(' '*27))
 
         for filename, entry in self.registered_files.items():
 
@@ -134,13 +133,13 @@ class ConsistencyCheck(object):
                     self.registered_files[filename]['unencrypted_file'],
                     self.registered_files[filename]['encrypted_file']))
 
-        print('\nTotal files in the register: %d' % total_files)
-        print('Check: %d ok, %d not ok' % (total_files - count_nok, count_nok))
-        
+        print('\nTotal files in the register: {}'.format(total_files))
+        print('Check: {} ok, {} not ok'.format(total_files - count_nok, count_nok))
+
     def delete_orphans_encrypted_files(self):
-        """ Delete orphans encoded files (which are not in register). 
-        
-        Normally this should not happen, but it can happen anyway 
+        """Delete orphans encoded files (which are not in register).
+
+        Normally this should not happen, but it can happen anyway
         after a crash during encryption or by modifying register
         manually.
         """
@@ -150,20 +149,20 @@ class ConsistencyCheck(object):
                 for name in filenames:
                     enc_files.append(name)
             for enc_file in enc_files:
-                if not inv.exists_encrypted_file(enc_file):  
+                if not inv.exists_encrypted_file(enc_file):
                     FileOps.delete_file(self.parameters['securedir'], enc_file)
-    
+
     def list_records(self):
-        "Displays number of records"
-        
+        "Display number of records."
+
         with Inventory(self.database) as inv:
             total_records = len(inv.read_register("all"))
             reg_files = len(inv.read_register("files"))
             reg_links = len(inv.read_register("links"))
             reg_dirs = len(inv.read_register("dirs"))
-            
-            printit("- Registered regular files :     {}", reg_files)
-            printit("- Registered symlinks :          {}", reg_links)
-            printit("- Registered empty directories : {}", reg_dirs)
-            printit("")
-            printit("Total number of records :        {}", total_records)
+
+            print("- Registered regular files :     {}".format(reg_files))
+            print("- Registered symlinks :          {}".format(reg_links))
+            print("- Registered empty directories : {}".format(reg_dirs))
+            print()
+            print("Total number of records :        {}".format(total_records))
